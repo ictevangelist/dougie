@@ -15,3 +15,6 @@ Add an entry to `data/subjects.js`, create `data/<slug>.js`, and copy `index.htm
 
 ## Keep it unlisted
 Every page has `<meta name="robots" content="noindex, nofollow">`, `robots.txt` disallows everything, there is no sitemap, and nothing links here from ictevangelist.com. No analytics or third-party scripts apart from Google Fonts. Progress is saved in the browser's localStorage only.
+
+## After changing assets or data
+Bump the version so browsers fetch the new files: run `V=$(cat assets/site.css assets/site.js data/*.js | md5sum | cut -c1-8)` and replace the `window.DR_V = "..."` value in every `index.html` and `404.html` with it.
