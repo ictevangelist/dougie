@@ -13,6 +13,7 @@ DR.registry = [
   {
     slug: "biology",
     name: "Biology",
+    wheel: "Bio",
     accent: "#16A085",
     tint: "#DEF2EE",
     status: "live",
@@ -31,9 +32,10 @@ DR.registry = [
     slug: "computer-science",
     name: "Computer Science",
     short: "Comp Sci",
+    wheel: "CS",
     accent: "#D35400",
     tint: "#F9E7DB",
-    status: "soon",
-    blurb: "Coming soon"
+    status: "live",
+    blurb: "OCR GCSE Computer Science (J277), Paper 1 and Paper 2"
   }
 ];

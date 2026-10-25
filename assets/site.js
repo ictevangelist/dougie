@@ -161,8 +161,8 @@
     return '<a class="skip" href="#main">Skip to content</a><header class="site-header"><div class="wrap">' +
       '<a class="brand" href="' + BASE + '/"><span class="brand-dot" aria-hidden="true"></span>Dougie\'s Revision</a><nav aria-label="Main"><ul class="nav">' +
       links.map(function (l) {
-        var label = l.short ? '<span class="n-long">' + esc(l.name) + '</span><span class="n-short" aria-hidden="true">' + esc(l.short) + "</span>" : esc(l.name);
-        return '<li><a href="' + l.href + '"' + (l.short ? ' aria-label="' + esc(l.name) + '"' : "") + (l.slug === current ? ' aria-current="page"' : "") + ">" + label + "</a></li>";
+        var label = l.short ? '<span class="n-long">' + esc(l.name) + '</span><span class="n-short">' + esc(l.short) + "</span>" : esc(l.name);
+        return '<li><a href="' + l.href + '"' + "" + (l.slug === current ? ' aria-current="page"' : "") + ">" + label + "</a></li>";
       }).join("") +
       "</ul></nav></div></header>";
   }
@@ -243,7 +243,7 @@
   function slotTitle(subj, sl, idx) {
     if (sl.type === "report") { var h = idx[sl.report]; return h ? (h.report.code === "Mixed" ? "" : h.report.code + " ") + h.report.title : sl.report; }
     if (sl.type === "check") { var u = unitByCode(subj, sl.unit); return "Unit " + sl.unit + " check" + (u ? ": " + u.title : ""); }
-    if (sl.type === "practice") { var a = (subj.activities || {})[sl.activity]; return sl.title || (a ? "Practice: " + a.title : "Practice"); }
+    if (sl.type === "practice") { var a = (subj.activities || {})[sl.activity]; return sl.title || (a ? a.title : "Practice"); }
     return sl.title;
   }
   /* Where a session stands at a moment: before, on (with the slot), or after */
@@ -444,7 +444,7 @@
         var subj = DR.subjects[r.slug], liveCard = r.status === "live" && subj;
         var reports = liveCard ? subj.units.reduce(function (n, u) { return n + u.reports.length; }, 0) : 0;
         return '<article class="card subject-card" style="--accent-dark:' + r.accent + ";--tint:" + r.tint + '"><h2>' + esc(r.name) + "</h2>" +
-          (liveCard ? "<p>" + esc(r.blurb) + ". " + reports + " reports in the notebook.</p>" + '<a class="btn" href="' + BASE + "/" + r.slug + '/">Open ' + esc(r.name) + "</a>"
+          (liveCard ? "<p>" + esc(r.blurb) + ". " + reports + " reports in the notebook" + (subj.notebook ? "" : "s") + ".</p>" + '<a class="btn" href="' + BASE + "/" + r.slug + '/">Open ' + esc(r.name) + "</a>"
             : '<p><span class="chip">Coming soon</span></p><p>Not yet. Enjoy it while it lasts.</p>') + "</article>";
       }).join("");
       frame("", null,
@@ -503,7 +503,7 @@
         return '<li class="card" style="--accent-dark:' + reg.accent + '"><a href="' + BASE + "/" + slug + "/sessions/" + skey(s) + '/"><strong>' + esc(s.title) + "</strong><span>" + (s.flexible ? "Do it when you're ready. About " + hrs(s.totalMins) + "." : longDate(s.date) + ", " + range(s.start, s.end)) + "</span></a></li>";
       }).join("");
       frame(slug, [{ href: BASE + "/", name: "Hub" }, { name: subj.name }],
-        '<div class="hero"><div><h1>' + esc(subj.heading) + '</h1><p class="lede">' + esc(subj.paper) + '</p><p><a class="btn btn-big" href="' + esc(subj.notebook) + '" target="_blank" rel="noopener">Open the ' + esc(subj.name) + " Notebook</a></p></div></div>" +
+        '<div class="hero"><div><h1>' + esc(subj.heading) + '</h1><p class="lede">' + esc(subj.paper) + '</p>' + (subj.notebook ? '<p><a class="btn btn-big" href="' + esc(subj.notebook) + '" target="_blank" rel="noopener">Open the ' + esc(subj.name) + " Notebook</a></p>" : (subj.sessions || []).filter(function (x) { return x.notebook; }).map(function (x) { return '<a class="btn btn-big" href="' + esc(x.notebook) + '" target="_blank" rel="noopener">Open the ' + esc(x.short) + " Notebook</a>"; }).join(" ")) + "</div></div>" +
         '<section class="section" aria-labelledby="sessions-h"><h2 id="sessions-h">Sessions</h2><ul class="sessions-list">' + sessions + "</ul></section>" +
         '<div class="section"><h2>Your units</h2><p>Rate each report once you\'ve worked on it, and add your latest quiz score. Ratings from your sessions land here too, so this is the honest picture of where you are.</p></div>' + units, subj.name);
       var main = document.getElementById("main");
@@ -543,7 +543,7 @@
         '<div class="hero session-head"><div><h1>' + esc(sess.title) + '</h1><p class="times">' + times + '</p></div><div class="portal" aria-hidden="true"></div></div>' +
         '<div id="mission" class="section" aria-live="polite"></div>' + payHtml(sess) +
         '<details class="panel howto section" open><summary>How this works</summary><ol>' + howTo.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("") + "</ol></details>" +
-        '<div class="section nb-row no-print"><a class="btn btn-big" href="' + esc(subj.notebook) + '" target="_blank" rel="noopener">Open the ' + esc(subj.name) + " Notebook</a></div>" +
+        ((sess.notebook || subj.notebook) ? '<div class="section nb-row no-print"><a class="btn btn-big" href="' + esc(sess.notebook || subj.notebook) + '" target="_blank" rel="noopener">Open the ' + esc(sess.short || subj.name) + " Notebook</a></div>" : "") +
         '<section class="section" aria-labelledby="tl-h"><h2 id="tl-h">Timeline</h2>' +
         '<div class="progress"><div class="bar" role="progressbar" aria-label="Slots done" aria-valuemin="0" aria-valuemax="' + countable(sess) + '" aria-valuenow="0"><i></i></div><p id="prog-text" aria-live="polite"></p></div>' +
         '<ol class="timeline">' + sess.slots.map(function (sl, i) { return slotHtml(subj, sess, sl, i, idx, ss); }).join("") + "</ol></section>" +
@@ -561,11 +561,12 @@
   function slotHtml(subj, sess, sl, i, idx, ss) {
     var u, code = "", focus = "", extra = "", isDone = !!ss.done[i];
     if (sl.type === "report") {
-      var hit = idx[sl.report] || {}; u = hit.unit; var r = hit.report || { code: sl.report, title: sl.report, focus: "" };
+      var hit = idx[sl.report] || {}; u = hit.unit; var r = hit.report || { code: sl.report, title: sl.report, focus: "" }, nb = sess.notebook || subj.notebook;
       code = r.code === "Mixed" ? "" : r.code; focus = r.focus;
       var saved = ss.reports[r.code] || {};
       extra = '<p class="find">' + (r.link ? '<a class="btn btn-ghost" href="' + esc(r.link) + '" target="_blank" rel="noopener">Open ' + esc(r.code === "Mixed" ? r.title : r.code) + "</a>"
-        : '<a class="btn btn-ghost" href="' + esc(subj.notebook) + '" target="_blank" rel="noopener">Open the notebook</a><span>In the Studio panel, look for <strong>' + esc(r.lookFor || r.code) + "</strong>.</span>") + "</p>" +
+        : nb ? '<a class="btn btn-ghost" href="' + esc(nb) + '" target="_blank" rel="noopener">Open the notebook</a><span>In the Studio panel, look for <strong>' + esc(r.lookFor || r.code) + "</strong>.</span>"
+        : "<span>Dad's still setting this report up in the notebook.</span>") + "</p>" +
         (sl.prompt ? promptHtml("p-" + i, sl.prompt, "End of session check", subj.checkNote) : "") +
         '<div class="after" data-after="' + i + '"' + (isDone ? "" : " hidden") + ">" + rating("rate-" + i, saved.rating) + '<p style="margin-top:12px">' + scoreBox("score-" + i, saved.score) + "</p></div>";
     } else if (sl.type === "practice") {
@@ -598,16 +599,17 @@
     }
     function steps(sl) {
       var list = (subj.steps && subj.steps[sl.type]) || [], h = sl.type === "report" && idx[sl.report];
-      if (h && !h.report.link) list = ["Open the notebook and find " + (h.report.lookFor || h.report.code) + " in the Studio panel."].concat(list);
+      if (h && !h.report.link && (sess.notebook || subj.notebook)) list = ["Open the notebook and find " + (h.report.lookFor || h.report.code) + " in the Studio panel."].concat(list);
       return list;
     }
     function missionLink(sl) {
       var h = sl.type === "report" && idx[sl.report];
       if (h && h.report.link) return '<a class="btn" href="' + esc(h.report.link) + '" target="_blank" rel="noopener">Open ' + esc(h.report.code === "Mixed" ? h.report.title : h.report.code) + "</a>";
-      return '<a class="btn" href="' + esc(subj.notebook) + '" target="_blank" rel="noopener">Open the notebook</a>';
+      var nb = sess.notebook || subj.notebook;
+      return nb ? '<a class="btn" href="' + esc(nb) + '" target="_blank" rel="noopener">Open the notebook</a>' : "";
     }
     function missionHtml(st) {
-      if (st.when === "ready") return '<section class="mission" aria-labelledby="m-h"><p class="kicker">Ready when you are</p><h2 id="m-h">' + esc(sess.title) + "</h2><p>This one takes about " + hrs(sess.totalMins) + ". Press Start when you're sat down with a drink, your calculator and some paper. The timer runs from then, and you can pause it if you need to stop.</p>" +
+      if (st.when === "ready") return '<section class="mission" aria-labelledby="m-h"><p class="kicker">Ready when you are</p><h2 id="m-h">' + esc(sess.title) + "</h2><p>This one takes about " + hrs(sess.totalMins) + ". Press Start when you're sat down with a drink, a pen and some paper. The timer runs from then, and you can pause it if you need to stop.</p>" +
         '<button type="button" class="btn btn-big" id="clock-start">Start</button></section>';
       if (st.when === "future") return '<section class="mission" aria-labelledby="m-h"><p class="kicker">Next session</p><h2 id="m-h">' + longDate(date) + ", " + sess.start + '</h2><p>Have a look through the plan below so nothing surprises you. When it starts, this box tells you exactly what to do and how long you\'ve got.</p></section>';
       if (st.when === "before") return '<section class="mission" aria-labelledby="m-h"><p class="kicker">Today</p><h2 id="m-h">Starts at ' + sess.start + '</h2><p class="countdown">' + clockText(st.secs) + "<small>to go</small></p><p>Get a drink, get your calculator, and get the notebook open.</p></section>";
@@ -622,7 +624,7 @@
         '<p class="countdown">' + clockText(st.left) + "<small>" + (st.paused ? "left, paused" : isBreak ? "until you're back on" : "left on this one") + "</small></p>" + controls +
         (sl.note ? '<p class="note"><strong>' + esc(sl.note) + "</strong></p>" : "") +
         '<ol class="steps">' + steps(sl).map(function (s) { return "<li>" + esc(s) + "</li>"; }).join("") + "</ol>" +
-        (sl.type === "report" && subj.stuck ? '<div class="stuck"><p class="stuck-h">' + esc(subj.stuck.title) + "</p><ol>" + subj.stuck.lines.map(function (s) { return "<li>" + esc(s) + "</li>"; }).join("") + "</ol>" + (subj.stuck.dad ? '<p class="stuck-dad">' + esc(subj.stuck.dad) + "</p>" : "") + "</div>" : "") +
+        ((sl.type === "report" || sl.type === "practice") && subj.stuck ? '<div class="stuck"><p class="stuck-h">' + esc(subj.stuck.title) + "</p><ol>" + subj.stuck.lines.map(function (s) { return "<li>" + esc(s) + "</li>"; }).join("") + "</ol>" + (subj.stuck.dad ? '<p class="stuck-dad">' + esc(subj.stuck.dad) + "</p>" : "") + "</div>" : "") +
         '<div class="btn-row">' + (isBreak ? "" : (sl.type === "practice" ? '<a class="btn" href="#slot-' + st.i + '">Go to the practice</a>' : missionLink(sl) + '<a class="btn btn-ghost" href="#slot-' + st.i + '">Go to this slot</a>')) +
         '<button type="button" class="btn btn-ghost" id="focus-btn" aria-pressed="' + (focus ? "true" : "false") + '">' + (focus ? "Show everything" : "Focus mode") + "</button></div>" + nextLine + "</section>";
     }
@@ -784,7 +786,7 @@
       return head + "<p>" + esc(a.task) + '</p><label class="sr-only" for="code-' + i + '">Your Python code</label><textarea class="code-box" id="code-' + i + '" spellcheck="false" autocapitalize="off" autocomplete="off" rows="10">' + esc(saved.code != null ? saved.code : a.starter || "") + "</textarea>" +
         '<pre class="py-out" id="out-' + i + '" hidden></pre>' + foot + '<details class="erl"' + (saved.ok || saved.shown ? "" : " hidden") + '><summary>The same thing in OCR Exam Reference Language</summary><pre class="code">' + esc(a.erl) + "</pre>" + (a.answer ? '<p class="label">One way to write it in Python</p><pre class="code">' + esc(a.answer) + "</pre>" : "") + "</details></div>";
     }
-    var m = actModel(a), body = '<div class="table-wrap"><table class="act-table"><thead><tr>' + (m.given ? "" : "<th scope=\"col\"></th>") + m.cols.map(function (c) { return '<th scope="col">' + esc(c) + "</th>"; }).join("") + "</tr></thead><tbody>";
+    var m = actModel(a), body = '<div class="table-wrap"><table class="act-table"><thead><tr>' + (m.given ? "" : '<th scope="col"><span class="sr-only">Row</span></th>') + m.cols.map(function (c) { return '<th scope="col">' + esc(c) + "</th>"; }).join("") + "</tr></thead><tbody>";
     m.rows.forEach(function (r, ri) {
       body += "<tr>" + (m.given ? r.given.map(function (g) { return '<td class="given">' + g + "</td>"; }).join("") : '<th scope="row">' + esc(r.label) + "</th>");
       r.cells.forEach(function (c, ci) {
