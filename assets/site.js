@@ -4,6 +4,8 @@
   "use strict";
   var DR = window.DR = window.DR || {};
   DR.subjects = DR.subjects || {};
+  /* "" on dougie.ictevangelist.com; "/dougie" on ictevangelist.github.io/dougie/ */
+  var BASE = DR.base = window.DR_BASE || "";
 
   /* ---------- helpers ---------- */
   function esc(s) {
@@ -58,7 +60,7 @@
     slugs.forEach(function (slug) {
       if (DR.subjects[slug]) { if (!--left) cb(); return; }
       var sc = document.createElement("script");
-      sc.src = "/data/" + slug + ".js";
+      sc.src = BASE + "/data/" + slug + ".js";
       sc.onload = sc.onerror = function () { if (!--left) cb(); };
       document.head.appendChild(sc);
     });
@@ -66,9 +68,9 @@
 
   /* ---------- shared header, breadcrumbs and footer ---------- */
   function header(current) {
-    var links = [{ href: "/", name: "Hub", slug: "" }].concat((DR.registry || []).map(function (r) { return { href: "/" + r.slug + "/", name: r.name, slug: r.slug }; }));
+    var links = [{ href: BASE + "/", name: "Hub", slug: "" }].concat((DR.registry || []).map(function (r) { return { href: BASE + "/" + r.slug + "/", name: r.name, slug: r.slug }; }));
     return '<a class="skip" href="#main">Skip to content</a><header class="site-header"><div class="wrap">' +
-      '<a class="brand" href="/">Dougie\'s Revision</a><nav aria-label="Main"><ul class="nav">' +
+      '<a class="brand" href="' + BASE + '/">Dougie\'s Revision</a><nav aria-label="Main"><ul class="nav">' +
       links.map(function (l) { return '<li><a href="' + l.href + '"' + (l.slug === current ? ' aria-current="page"' : "") + ">" + esc(l.name) + "</a></li>"; }).join("") +
       "</ul></nav></div></header>";
   }
@@ -155,14 +157,14 @@
             var reg = registryItem(slug);
             banners += '<section class="today" style="--accent:' + reg.accent + '" aria-labelledby="today-' + slug + '"><p class="muted" style="color:#fff">Today\'s session</p>' +
               '<h2 id="today-' + slug + '">' + esc(s.title) + "</h2><p>" + longDate(s.date) + ", " + range(s.start, s.end) + "</p>" +
-              '<a class="btn btn-big" href="/' + slug + "/sessions/" + s.date + '/">Start</a></section>';
+              '<a class="btn btn-big" href="' + BASE + '/' + slug + "/sessions/" + s.date + '/">Start</a></section>';
           }
         });
       });
       var cards = (DR.registry || []).map(function (r) {
         var liveCard = r.status === "live";
         return '<article class="card subject-card" style="--accent-dark:' + r.accent + ";--tint:" + r.tint + '"><h2>' + esc(r.name) + "</h2>" +
-          (liveCard ? "<p>" + esc(r.blurb) + '</p><a class="btn" href="/' + r.slug + '/">Open ' + esc(r.name) + "</a>"
+          (liveCard ? "<p>" + esc(r.blurb) + '</p><a class="btn" href="' + BASE + '/' + r.slug + '/">Open ' + esc(r.name) + "</a>"
             : '<p><span class="chip">Coming soon</span></p><p class="muted">On its way.</p>') + "</article>";
       }).join("");
       frame("", null,
@@ -175,7 +177,7 @@
     var reg = registryItem(slug);
     if (!reg) return pageNotFound();
     if (reg.status !== "live") {
-      frame(slug, [{ href: "/", name: "Hub" }, { name: reg.name }],
+      frame(slug, [{ href: BASE + "/", name: "Hub" }, { name: reg.name }],
         '<h1>' + esc(reg.name) + '</h1><div class="card" style="--accent-dark:' + reg.accent + ";--tint:" + reg.tint + '"><p><span class="chip">Coming soon</span></p><p>' + esc(reg.name) + " revision is on its way, Dougie. Check back soon.</p></div>", reg.name);
       return;
     }
@@ -193,9 +195,9 @@
           }).join("") + "</ul></section>";
       }).join("");
       var sessions = sessionsNewestFirst(subj).map(function (s) {
-        return '<li class="card" style="--accent-dark:' + reg.accent + '"><a href="/' + slug + "/sessions/" + s.date + '/"><strong>' + esc(s.title) + "</strong><span>" + longDate(s.date) + ", " + range(s.start, s.end) + "</span></a></li>";
+        return '<li class="card" style="--accent-dark:' + reg.accent + '"><a href="' + BASE + '/' + slug + "/sessions/" + s.date + '/"><strong>' + esc(s.title) + "</strong><span>" + longDate(s.date) + ", " + range(s.start, s.end) + "</span></a></li>";
       }).join("");
-      frame(slug, [{ href: "/", name: "Hub" }, { name: subj.name }],
+      frame(slug, [{ href: BASE + "/", name: "Hub" }, { name: subj.name }],
         "<h1>" + esc(subj.heading) + '</h1><p class="lede">' + esc(subj.paper) + '</p><p><a class="btn btn-big" href="' + esc(subj.notebook) + '" target="_blank" rel="noopener">Open the ' + esc(subj.name) + " Notebook</a></p>" +
         '<section class="section" aria-labelledby="sessions-h"><h2 id="sessions-h">Sessions</h2><ul class="sessions-list">' + sessions + "</ul></section>" +
         '<div class="section"><h2>Your units</h2><p>Rate each report once you\'ve worked on it, and add your latest quiz score. Ratings from your sessions show up here too.</p></div>' + units, subj.name);
@@ -238,7 +240,7 @@
       var slotsHtml = sess.slots.map(function (sl, i) { return slotHtml(subj, sess, sl, i, idx, ss); }).join("");
       var howTo = sess.howTo || subj.howTo || [];
       var nb = '<p class="no-print"><a class="btn btn-big" href="' + esc(subj.notebook) + '" target="_blank" rel="noopener">Open the ' + esc(subj.name) + " Notebook</a></p>";
-      frame(slug, [{ href: "/", name: "Hub" }, { href: "/" + slug + "/", name: subj.name }, { name: longDate(date) }],
+      frame(slug, [{ href: BASE + "/", name: "Hub" }, { href: BASE + "/" + slug + "/", name: subj.name }, { name: longDate(date) }],
         '<div class="session-head"><h1>' + esc(sess.title) + '</h1><p class="times">' + longDate(date) + ", " + range(sess.start, sess.end) + (breaks ? ", " + breaks : "") + "</p></div>" +
         '<div id="state"></div>' +
         '<section class="panel howto section" aria-labelledby="how-h"><h2 id="how-h">How this works</h2><ol>' + howTo.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("") + "</ol></section>" +
@@ -357,12 +359,12 @@
   }
 
   function pageNotFound() {
-    frame(null, [{ href: "/", name: "Hub" }, { name: "Not found" }], "<h1>Page not found</h1><p>That page isn't here, Dougie. Head back to the <a href=\"/\">hub</a>.</p>", "Page not found");
+    frame(null, [{ href: BASE + "/", name: "Hub" }, { name: "Not found" }], "<h1>Page not found</h1><p>That page isn't here, Dougie. Head back to the <a href=\"" + BASE + "/\">hub</a>.</p>", "Page not found");
   }
 
   /* ---------- router: works for real pages and for the 404 fallback ---------- */
   function route() {
-    var path = location.pathname.replace(/index\.html$/, "");
+    var path = location.pathname.slice(BASE.length).replace(/index\.html$/, "") || "/";
     var m;
     if (path === "/" || path === "") return pageHub();
     if ((m = path.match(/^\/([a-z0-9-]+)\/sessions\/(\d{4}-\d{2}-\d{2})\/?$/))) return pageSession(m[1], m[2]);

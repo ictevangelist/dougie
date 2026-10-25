@@ -1,6 +1,6 @@
 # Dougie's Revision
 
-Unlisted revision site at https://dougie.ictevangelist.com. Plain HTML, CSS and JavaScript, no build step. Every page is the same small HTML shell; `assets/site.js` reads the address and renders the page from the data files.
+Unlisted revision site at https://dougie.ictevangelist.com (also works at https://ictevangelist.github.io/dougie/). The CNAME file is added back once the DNS for dougie points at GitHub. Plain HTML, CSS and JavaScript, no build step. Every page is the same small HTML shell; `assets/site.js` reads the address and renders the page from the data files.
 
 - `assets/site.css`: the one stylesheet (design tokens on `:root`).
 - `assets/site.js`: the shared components (header, timeline, Done ticks, confidence rating, copy buttons, progress summary) and the page router.
