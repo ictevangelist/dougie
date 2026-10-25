@@ -781,7 +781,7 @@
     var saved = (ss.practice || {})[i] || {}, v = saved.v || {};
     var head = '<div class="act" data-act="' + i + '">' + (a.intro ? "<p>" + esc(a.intro) + "</p>" : "") + (a.code ? '<pre class="code">' + esc(a.code) + "</pre>" : "") +
       (a.kind === "sort" || a.kind === "binary" ? '<p class="act-list">The list: <strong>' + esc(a.list.join(", ")) + "</strong>" + (a.kind === "binary" ? ". Looking for <strong>" + esc(a.target) + "</strong>" : "") + "</p>" : "");
-    var foot = '<div class="btn-row"><button type="button" class="btn" data-check="' + i + '">' + (a.kind === "python" ? "Run and check" : "Check") + '</button><button type="button" class="linkbtn" data-show="' + i + '">Show the answers</button></div><p class="act-result" aria-live="polite">' + (saved.ok ? "Done: you got it right." : "") + "</p>";
+    var foot = '<div class="btn-row"><button type="button" class="btn" data-check="' + i + '">' + (a.kind === "python" ? "Run and check" : "Check") + '</button><button type="button" class="linkbtn" data-show="' + i + '">' + (a.kind === "python" && (saved.ok || saved.shown) ? "Hide the answers" : "Show the answers") + '</button><button type="button" class="linkbtn" data-clear="' + i + '">' + (a.kind === "python" ? "Start the code again" : "Clear and try again") + '</button></div><p class="act-result" aria-live="polite">' + (saved.ok ? "Done: you got it right." : "") + "</p>";
     if (a.kind === "python") {
       return head + "<p>" + esc(a.task) + '</p><label class="sr-only" for="code-' + i + '">Your Python code</label><textarea class="code-box" id="code-' + i + '" spellcheck="false" autocapitalize="off" autocomplete="off" rows="10">' + esc(saved.code != null ? saved.code : a.starter || "") + "</textarea>" +
         '<pre class="py-out" id="out-' + i + '" hidden></pre>' + foot + '<details class="erl"' + (saved.ok || saved.shown ? "" : " hidden") + '><summary>The same thing in OCR Exam Reference Language</summary><pre class="code">' + esc(a.erl) + "</pre>" + (a.answer ? '<p class="label">One way to write it in Python</p><pre class="code">' + esc(a.answer) + "</pre>" : "") + "</details></div>";
@@ -821,12 +821,22 @@
       t.value = t.value.slice(0, a) + "    " + t.value.slice(t.selectionEnd); t.selectionStart = t.selectionEnd = a + 4; save(+t.closest(".act").getAttribute("data-act"), { code: t.value });
     });
     main.addEventListener("click", function (ev) {
-      var b = ev.target.closest("[data-check],[data-show]"); if (!b) return;
-      var i = +(b.getAttribute("data-check") || b.getAttribute("data-show")), sl = sess.slots[i], a = subj.activities[sl.activity], box = main.querySelector('[data-act="' + i + '"]'), res = box.querySelector(".act-result");
+      var b = ev.target.closest("[data-check],[data-show],[data-clear]"); if (!b) return;
+      var i = +(b.getAttribute("data-check") || b.getAttribute("data-show") || b.getAttribute("data-clear")), sl = sess.slots[i], a = subj.activities[sl.activity], box = main.querySelector('[data-act="' + i + '"]'), res = box.querySelector(".act-result");
       var show = b.hasAttribute("data-show");
+      if (b.hasAttribute("data-clear")) {
+        if (a.kind === "python") { var t = box.querySelector(".code-box"); t.value = a.starter || ""; box.querySelector(".py-out").hidden = true; save(i, { code: t.value }); t.focus(); }
+        else { [].forEach.call(box.querySelectorAll("[data-cell]"), function (c) { c.value = ""; c.classList.remove("ok", "bad"); }); save(i, { v: {} }); box.querySelector("[data-cell]").focus(); }
+        res.textContent = ""; res.className = "act-result";
+        return;
+      }
       if (a.kind === "python") {
         var ta = box.querySelector(".code-box"), out = box.querySelector(".py-out"), erl = box.querySelector(".erl");
-        if (show) { erl.hidden = false; erl.open = true; save(i, { shown: true }); return; }
+        if (show) {
+          var hide = !erl.hidden; erl.hidden = hide; erl.open = !hide; b.textContent = hide ? "Show the answers" : "Hide the answers";
+          if (!hide) save(i, { shown: true });
+          return;
+        }
         res.textContent = py.started ? "Running your code..." : "Starting Python. The first run takes a few seconds...";
         b.disabled = true;
         pyRun(ta.value, a.tests.map(function (t) { return t[0]; }), function (r) {
@@ -838,7 +848,7 @@
           var all = pass === a.tests.length;
           res.textContent = all ? "All " + pass + " tests pass. Nice work." : pass + " of " + a.tests.length + " tests pass. Keep going.";
           res.className = "act-result " + (all ? "good" : "bad");
-          if (all) { save(i, { ok: true, code: ta.value }); erl.hidden = false; }
+          if (all) { save(i, { ok: true, code: ta.value }); erl.hidden = false; box.querySelector("[data-show]").textContent = "Hide the answers"; }
         });
         return;
       }
