@@ -253,20 +253,24 @@
   function wheelSvg() {
     var n = POCKETS.length, seg = 360 / n, out = "", red = true;
     POCKETS.forEach(function (lab, i) {
-      var a0 = (i * seg - 90) * Math.PI / 180, a1 = ((i + 1) * seg - 90) * Math.PI / 180, R = 92, r = 38;
+      var a0 = (i * seg - 90) * Math.PI / 180, a1 = ((i + 1) * seg - 90) * Math.PI / 180, R = 88, r = 38;
       var p = function (rad, a) { return (100 + rad * Math.cos(a)).toFixed(2) + " " + (100 + rad * Math.sin(a)).toFixed(2); };
       var cls = lab === "Mix" ? "pk-green" : (red ? "pk-red" : "pk-black"); if (lab !== "Mix") red = !red;
       var mid = (i + 0.5) * seg;
       out += '<path class="' + cls + '" d="M' + p(r, a0) + " L" + p(R, a0) + " A" + R + " " + R + " 0 0 1 " + p(R, a1) + " L" + p(r, a1) + " A" + r + " " + r + ' 0 0 0 ' + p(r, a0) + 'z"/>' +
         '<text class="pk-label' + (lab === "Mix" ? " pk-label-dark" : "") + '" x="100" y="32" transform="rotate(' + mid + ' 100 100)">' + lab + "</text>";
     });
-    return '<svg viewBox="0 0 200 200" aria-hidden="true" focusable="false"><circle cx="100" cy="100" r="98" class="wheel-rim"/>' +
-      '<g class="wheel-spin">' + out + '<circle cx="100" cy="100" r="38" class="wheel-hub"/></g>' +
-      '<text x="100" y="106" class="wheel-hub-label">SPIN</text><path d="M92 0 L108 0 L100 16 z" class="wheel-pointer"/></svg>';
+    var bolts = "";
+    for (var b = 0; b < n; b++) { var ba = (b * seg - 90) * Math.PI / 180; bolts += '<circle class="wheel-bolt" r="2.4" cx="' + (100 + 93 * Math.cos(ba)).toFixed(2) + '" cy="' + (100 + 93 * Math.sin(ba)).toFixed(2) + '"/>'; }
+    var arms = [0, 120, 240].map(function (d) { return '<path class="wheel-arm" d="M100 100 q 15 -2 20 -22 q 3 -7 9 -9" transform="rotate(' + d + ' 100 100)"/>'; }).join("");
+    return '<svg viewBox="0 0 200 200" aria-hidden="true" focusable="false"><defs><radialGradient id="portal-grad"><stop offset="0" stop-color="#2ECC71"/><stop offset=".6" stop-color="#2ECC71"/><stop offset="1" stop-color="#16A085"/></radialGradient><clipPath id="hub-clip"><circle cx="100" cy="100" r="35"/></clipPath></defs>' +
+      '<circle cx="100" cy="100" r="97" class="wheel-rim"/>' +
+      '<g class="wheel-spin">' + out + bolts + '<circle cx="100" cy="100" r="38" class="wheel-hub"/><g clip-path="url(#hub-clip)"><g class="wheel-swirl">' + arms + "</g></g></g>" +
+      '<path d="M91 0 L109 0 L100 18 z" class="wheel-pointer"/></svg>';
   }
   function wheelInit(live) {
     var btn = document.getElementById("wheel"), dlg = document.getElementById("wheel-q"); if (!btn || !dlg) return;
-    var spinG = btn.querySelector(".wheel-spin"), turn = 0, lastQ = null, units = {};
+    var spinG = btn.parentNode.querySelector(".wheel-spin"), turn = 0, lastQ = null, units = {};
     var bank = [];
     live.forEach(function (slug) { var sj = DR.subjects[slug]; if (!sj) return; (sj.units || []).forEach(function (u) { units[u.code] = u; }); (sj.quiz || []).forEach(function (q) { bank.push(q); }); });
     if (!bank.length) { btn.parentNode.hidden = true; return; }
@@ -332,7 +336,7 @@
             : '<p><span class="chip">Coming soon</span></p><p>Not yet. Enjoy it while it lasts.</p>') + "</article>";
       }).join("");
       frame("", null,
-        '<div class="hero"><div><h1>Right then, Dougie.</h1><p class="lede">This is your revision lab. The plan, the timer and the pay are all in here, so there\'s nothing to work out. Turn up, do the thing on screen, move on when the timer says so.</p></div><div class="wheel-wrap"><button type="button" class="wheel" id="wheel" aria-label="Spin Dougie\'s Wheel of Fortune for a question">' + wheelSvg() + '</button><p class="wheel-cap"><strong>Dougie\'s Wheel of Fortune</strong><br>Tap to spin. Right first time: +5p. Wrong: 5p off.</p></div></div>' +
+        '<div class="hero"><div><h1>Right then, Dougie.</h1><p class="lede">This is your revision lab. The plan, the timer and the pay are all in here, so there\'s nothing to work out. Turn up, do the thing on screen, move on when the timer says so.</p></div><div class="wheel-wrap"><div class="wheel">' + wheelSvg() + '<button type="button" class="wheel-btn" id="wheel" aria-label="SPIN Dougie\'s Wheel of Fortune for a question">SPIN</button></div><p class="wheel-cap"><strong>Dougie\'s Wheel of Fortune</strong><br>Tap to spin. Right first time: +5p. Wrong: 5p off.</p></div></div>' +
         '<dialog class="quiz" id="wheel-q" aria-labelledby="wheel-q-h"></dialog>' +
         '<div id="hub-now" aria-live="polite"></div>' +
         jarHtml() +

@@ -130,23 +130,27 @@ main { padding: var(--space-5) 0 var(--space-7); }
 .jar-total small { font-size: var(--step-1); font-weight: 700; color: var(--ink-2); margin-left: var(--space-2); }
 @media (prefers-reduced-motion: no-preference) { .jar-coins { animation: jar-up 1.2s ease-out; } }
 @keyframes jar-up { from { transform: scaleY(0); } }
-/* Dougie's Wheel of Fortune: roulette pockets in Pomegranate and Midnight with Clouds labels (5.44 and 9.57), one Emerald Mix pocket with Midnight label (5.23) */
+/* Dougie's Wheel of Fortune: a portal-tech roulette wheel. Pockets in Pomegranate and Midnight with Clouds labels (5.44 and 9.57), one Emerald Mix pocket with Midnight label (5.23) */
 .wheel-wrap { flex: none; display: flex; flex-direction: column; align-items: center; gap: var(--space-2); margin: 0 auto; }
-.wheel { width: 240px; aspect-ratio: 1; padding: 0; border: 0; background: none; border-radius: 50%; cursor: pointer; }
-.wheel svg { width: 100%; height: 100%; display: block; overflow: visible; }
-.wheel:focus-visible { outline: 3px solid #F1C40F; outline-offset: 6px; }
-.wheel:hover .wheel-hub { fill: #F39C12; }
-.wheel[disabled] { cursor: wait; }
-.wheel-rim { fill: #7F8C8D; stroke: #F1C40F; stroke-width: 3; }
+.wheel { --w: 240px; width: var(--w); aspect-ratio: 1; position: relative; }
+.wheel-btn { position: absolute; inset: 0; border: 0; border-radius: 50%; background: none; cursor: pointer; padding: 0; color: #2C3E50; font-family: "Exo 2", sans-serif; font-weight: 800; font-size: calc(var(--w) * .095); }
+.wheel svg { width: 100%; height: 100%; display: block; overflow: visible; filter: drop-shadow(0 0 16px rgba(46, 204, 113, .55)); }
+.wheel-btn:focus-visible { outline: 3px solid #ECF0F1; outline-offset: 6px; }
+.wheel:hover svg { filter: drop-shadow(0 0 26px rgba(46, 204, 113, .85)); }
+.wheel-btn[disabled] { cursor: wait; }
+.wheel-rim { fill: #2C3E50; stroke: #2ECC71; stroke-width: 4; }
+.wheel-bolt { fill: #BDC3C7; }
 .wheel-spin { transform-box: view-box; transform-origin: 100px 100px; transition: transform 4s cubic-bezier(.15, .7, .2, 1); }
 .pk-red { fill: #C0392B; stroke: #ECF0F1; stroke-width: 1; }
 .pk-black { fill: #2C3E50; stroke: #ECF0F1; stroke-width: 1; }
 .pk-green { fill: #2ECC71; stroke: #ECF0F1; stroke-width: 1; }
 .pk-label { fill: #ECF0F1; font-family: "Exo 2", sans-serif; font-weight: 800; font-size: 15px; text-anchor: middle; }
 .pk-label-dark { fill: #2C3E50; }
-.wheel-hub { fill: #F1C40F; stroke: #2C3E50; stroke-width: 3; }
-.wheel-hub-label { fill: #2C3E50; font-family: "Exo 2", sans-serif; font-weight: 800; font-size: 17px; text-anchor: middle; pointer-events: none; }
-.wheel-pointer { fill: #ECF0F1; stroke: #2C3E50; stroke-width: 2; }
+.wheel-hub { fill: url(#portal-grad); stroke: #2C3E50; stroke-width: 3; }
+.wheel-swirl { transform-box: view-box; transform-origin: 100px 100px; }
+.wheel-arm { fill: none; stroke: #16A085; stroke-width: 4; stroke-linecap: round; }
+@media (prefers-reduced-motion: no-preference) { .wheel-swirl { animation: spin 5s linear infinite reverse; } }
+.wheel-pointer { fill: #2ECC71; stroke: #2C3E50; stroke-width: 2; }
 .wheel-cap { margin: 0; text-align: center; color: var(--ink-2); font-size: var(--step--1); }
 .wheel-cap strong { color: var(--ink); font-family: "Exo 2", sans-serif; font-size: var(--step-1); }
 .quiz { background: var(--panel); color: var(--ink); border: 2px solid var(--portal); border-radius: var(--radius-l); padding: var(--space-5); width: calc(100% - 32px); max-width: 620px; box-shadow: var(--glow); }
@@ -163,7 +167,7 @@ main { padding: var(--space-5) 0 var(--space-7); }
 .quiz-result { font-weight: 700; font-size: var(--step-1); margin: 0 0 var(--space-3); }
 .quiz-result:empty { display: none; }
 .jar.still .jar-coins { animation: none; }
-@media (min-width: 700px) { .wheel { width: 280px; } }
+@media (min-width: 700px) { .wheel { --w: 280px; } }
 @media (max-width: 699px) { .jar { grid-template-columns: 1fr; } .jar-svg { max-width: 200px; margin: 0 auto; } }
 
 /* Units and reports */
