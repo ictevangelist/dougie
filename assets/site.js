@@ -71,7 +71,7 @@
     slugs.forEach(function (slug) {
       if (DR.subjects[slug]) { if (!--left) cb(); return; }
       var sc = document.createElement("script");
-      sc.src = BASE + "/data/" + slug + ".js";
+      sc.src = BASE + "/data/" + slug + ".js" + (window.DR_V ? "?v=" + window.DR_V : "");
       sc.onload = sc.onerror = function () { if (!--left) cb(); };
       document.head.appendChild(sc);
     });

@@ -12,7 +12,8 @@
 <script>
 /* Works at dougie.ictevangelist.com and at ictevangelist.github.io/dougie/ */
 window.DR_BASE = /\.github\.io$/.test(location.hostname) ? "/" + location.pathname.split("/")[1] : "";
-document.write('<link rel="stylesheet" href="' + DR_BASE + '/assets/site.css"><script src="' + DR_BASE + '/data/subjects.js"><\/script><script src="' + DR_BASE + '/assets/site.js"><\/script>');
+window.DR_V = "0c02b334";
+document.write('<link rel="stylesheet" href="' + DR_BASE + '/assets/site.css?v=' + DR_V + '"><script src="' + DR_BASE + '/data/subjects.js?v=' + DR_V + '"><\/script><script src="' + DR_BASE + '/assets/site.js?v=' + DR_V + '"><\/script>');
 </script>
 </head>
 <body>
