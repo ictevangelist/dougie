@@ -7,6 +7,8 @@ DR.subjects = DR.subjects || {};
    No arguments doubles a day to perDay x 2, but the doubling only counts over a run of "days" days. Dad decides on the arguments. */
 /* calmDays: the dates Dad confirms had no arguments, for example ["2026-10-26"]. The money jar on the hub reads them. */
 DR.pay = { currency: "\u00a3", perDay: 5, days: 3, calmDays: [] };
+/* Google sign-in (Firebase). null keeps progress on this device only. Paste the web app config from the Firebase console here. */
+DR.firebase = null;
 DR.registry = [
   {
     slug: "biology",

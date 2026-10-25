@@ -32,6 +32,65 @@
   }
   function registryItem(slug) { return (DR.registry || []).filter(function (r) { return r.slug === slug; })[0]; }
 
+  /* ---------- Google sign-in and the shared record (Firebase), switched on by DR.firebase in data/subjects.js ----------
+     Every key is kept in localStorage as well, so the site keeps working offline. On sign-in the newer copy of each key wins,
+     by its _at time. Firestore rules let only Dougie's and Dad's Google accounts read or write progress/dougie. */
+  var SDK = "https://www.gstatic.com/firebasejs/10.12.2/";
+  var cloud = DR.cloud = {
+    on: false, user: null, doc: null, timers: {},
+    push: function (subject, data) {
+      if (!cloud.on || !cloud.doc) return;
+      clearTimeout(cloud.timers[subject]);
+      cloud.timers[subject] = setTimeout(function () { var o = {}; o[subject] = JSON.stringify(data); cloud.doc.set(o, { merge: true }).catch(function () {}); }, 600);
+    },
+    load: function (src, cb) { var sc = document.createElement("script"); sc.src = SDK + src; sc.onload = function () { cb(); }; sc.onerror = function () { cb(new Error("sdk")); }; document.head.appendChild(sc); },
+    start: function (done) {
+      frame(null, null, '<p class="muted">Loading...</p>');
+      cloud.load("firebase-app-compat.js", function (err) {
+        if (err) return done();
+        var left = 2, next = function () { if (--left) return; cloud.init(done); };
+        cloud.load("firebase-auth-compat.js", next); cloud.load("firebase-firestore-compat.js", next);
+      });
+    },
+    init: function (done) {
+      var fb = window.firebase; fb.initializeApp(DR.firebase);
+      var started = false;
+      fb.auth().onAuthStateChanged(function (u) {
+        if (!u) return cloud.gate();
+        cloud.user = u; cloud.doc = fb.firestore().collection("progress").doc("dougie");
+        var timer = setTimeout(function () { finish(); }, 5000);
+        cloud.doc.get().then(function (snap) {
+          clearTimeout(timer); cloud.merge(snap.exists ? snap.data() : {}); finish();
+        }, function (e) {
+          clearTimeout(timer);
+          if (e && e.code === "permission-denied") { fb.auth().signOut(); return cloud.gate("That Google account isn't allowed in. Sign in with Dougie's, Dad's or Mum's Google account."); }
+          finish();
+        });
+        function finish() { if (started) return; started = true; cloud.on = true; done(); }
+      });
+    },
+    merge: function (remote) {
+      var keys = {};
+      Object.keys(remote).forEach(function (k) { keys[k] = 1; });
+      try { for (var i = 0; i < localStorage.length; i++) { var lk = localStorage.key(i); if (/^dougie-revision:[a-z0-9-]+$/.test(lk)) keys[lk.split(":")[1]] = 1; } } catch (e) {}
+      Object.keys(keys).forEach(function (k) {
+        var r = null, l = store.read(k);
+        try { r = remote[k] ? JSON.parse(remote[k]) : null; } catch (e) {}
+        if (r && (r._at || 0) > (l._at || 0)) { try { localStorage.setItem(store.key(k), JSON.stringify(r)); } catch (e) {} }
+        else if (l._at && (!r || l._at > (r._at || 0))) { var o = {}; o[k] = JSON.stringify(l); cloud.doc.set(o, { merge: true }).catch(function () {}); }
+      });
+    },
+    gate: function (msg) {
+      frame(null, null, '<div class="hero"><div><h1>Dougie\'s Revision</h1><p class="lede">This site is private. Sign in with Google to carry on.</p>' +
+        (msg ? '<p class="note"><strong>' + esc(msg) + "</strong></p>" : "") +
+        '<p><button type="button" class="btn btn-big" id="signin">Sign in with Google</button></p></div></div>', "Sign in");
+      document.getElementById("signin").addEventListener("click", function () {
+        var fb = window.firebase, pr = new fb.auth.GoogleAuthProvider(); pr.setCustomParameters({ prompt: "select_account" });
+        fb.auth().signInWithPopup(pr).catch(function (e) { if (e && e.code !== "auth/popup-closed-by-user") cloud.gate("Sign-in didn't work. Try again."); });
+      });
+    }
+  };
+
   /* ---------- saved progress: localStorage, every read and write wrapped ---------- */
   var store = DR.store = {
     key: function (subject) { return "dougie-revision:" + subject; },
@@ -40,6 +99,8 @@
       catch (e) { return {}; }
     },
     write: function (subject, data) {
+      data._at = Date.now();
+      cloud.push(subject, data);
       try { window.localStorage.setItem(store.key(subject), JSON.stringify(data)); return true; }
       catch (e) { return false; }
     },
@@ -94,6 +155,7 @@
     }).join("") + "</ol></nav>";
   }
   function footer() {
+    if (cloud.on && cloud.user) return '<footer class="site-footer"><div class="wrap"><p>Your progress saves to your Google account, so it follows you to any device you sign in on.</p><p>Signed in as ' + esc(cloud.user.email) + '. <button type="button" class="linkbtn" id="signout">Sign out</button></p></div></footer>';
     return '<footer class="site-footer"><div class="wrap"><p>Your progress is saved on this device only. Ticks, ratings and scores stay in this browser, and clearing your browser data clears them too.</p><p>Dougie\'s Revision</p></div></footer>';
   }
   var baseTitle = "Dougie's Revision";
@@ -613,5 +675,7 @@
     pageNotFound();
   }
   DR.route = route;
-  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", route); else route();
+  function start() { if (DR.firebase) cloud.start(route); else route(); }
+  document.addEventListener("click", function (ev) { if (ev.target.id === "signout" && window.firebase) window.firebase.auth().signOut().then(function () { location.reload(); }); });
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
 }());
