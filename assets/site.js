@@ -228,19 +228,89 @@
     }
     return { total: total, max: runs * P.days * P.perDay * 2, calm: calmInRun };
   }
-  function jarHtml() {
+  function pounds(p) { return (p < 0 ? "-" : "") + (DR.pay.currency || "") + (Math.abs(p) % 100 ? (Math.abs(p) / 100).toFixed(2) : Math.abs(p) / 100); }
+  function quizStore() { var q = store.read("wheel"); q.pence = q.pence || 0; q.banked = q.banked || {}; return q; }
+  function jarHtml(still) {
     if (!DR.pay) return "";
-    var P = DR.pay, j = jarTotals(), f = Math.min(1, j.total / j.max), top = 40, bottom = 250, h = (bottom - top) * f, ticks = "";
+    var P = DR.pay, j = jarTotals(), q = quizStore(), totalP = Math.max(0, j.total * 100 + q.pence), maxP = j.max * 100;
+    var f = Math.min(1, totalP / maxP), top = 40, bottom = 250, h = (bottom - top) * f, ticks = "";
     for (var k = 1; k <= 3; k++) { var y = bottom - (bottom - top) * k / 3; ticks += '<line x1="150" x2="164" y1="' + y + '" y2="' + y + '" class="jar-tick"/><text x="170" y="' + (y + 5) + '" class="jar-label">' + money(j.max * k / 3) + "</text>"; }
-    return '<section class="card jar section" style="--accent-dark:#F1C40F" aria-labelledby="jar-h"><svg class="jar-svg" viewBox="0 0 210 270" role="img" aria-label="Money jar: ' + money(j.total) + " of " + money(j.max) + '">' +
+    var banked = Object.keys(q.banked).length;
+    return '<section class="card jar section' + (still ? " still" : "") + '" style="--accent-dark:#F1C40F" aria-labelledby="jar-h"><svg class="jar-svg" viewBox="0 0 210 270" role="img" aria-label="Money jar: ' + pounds(totalP) + " of " + money(j.max) + '">' +
       '<defs><clipPath id="jar-clip"><path d="M40 40 h90 v10 q20 10 20 40 v140 q0 20 -20 20 h-90 q-20 0 -20 -20 v-140 q0 -30 20 -40 z"/></clipPath></defs>' +
       '<g clip-path="url(#jar-clip)"><g class="jar-coins"><rect class="jar-fill" x="0" y="' + (bottom - h) + '" width="170" height="' + h + '"/>' + (h ? '<rect class="jar-shine" x="0" y="' + (bottom - h) + '" width="170" height="6"/>' : "") + "</g></g>" +
       '<path class="jar-glass" d="M40 40 h90 v10 q20 10 20 40 v140 q0 20 -20 20 h-90 q-20 0 -20 -20 v-140 q0 -30 20 -40 z"/>' +
       '<rect class="jar-lid" x="34" y="22" width="102" height="20" rx="6"/>' + ticks + "</svg>" +
-      '<div><h2 id="jar-h">The money jar</h2><p class="jar-total">' + money(j.total) + "<small>in the jar so far</small></p>" +
+      '<div><h2 id="jar-h">The money jar</h2><p class="jar-total">' + pounds(totalP) + "<small>in the jar so far</small></p>" +
       "<p>Every finished morning adds " + money(P.perDay) + ". Finished means every slot ticked and every quiz score in. Do " + P.days + " mornings in a row with no arguments and they count double, so the jar fills to " + money(P.perDay * 2 * P.days) + ".</p>" +
+      "<p>Dougie's Wheel of Fortune: " + (q.pence >= 0 ? "+" : "") + pounds(q.pence) + " so far, from " + banked + " question" + (banked === 1 ? "" : "s") + " banked.</p>" +
       '<p class="muted">Calm mornings Dad has confirmed this run: ' + j.calm + " of " + P.days + ". The jar counts what's saved on this device.</p></div></section>";
   }
+
+  /* ---------- Dougie's Wheel of Fortune: spin, land on a unit, answer a question ---------- */
+  function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var k = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[k]; a[k] = t; } return a; }
+  var POCKETS = ["4.1", "4.2", "4.3", "4.4", "Mix", "4.1", "4.2", "4.3", "4.4"];
+  function wheelSvg() {
+    var n = POCKETS.length, seg = 360 / n, out = "", red = true;
+    POCKETS.forEach(function (lab, i) {
+      var a0 = (i * seg - 90) * Math.PI / 180, a1 = ((i + 1) * seg - 90) * Math.PI / 180, R = 92, r = 38;
+      var p = function (rad, a) { return (100 + rad * Math.cos(a)).toFixed(2) + " " + (100 + rad * Math.sin(a)).toFixed(2); };
+      var cls = lab === "Mix" ? "pk-green" : (red ? "pk-red" : "pk-black"); if (lab !== "Mix") red = !red;
+      var mid = (i + 0.5) * seg;
+      out += '<path class="' + cls + '" d="M' + p(r, a0) + " L" + p(R, a0) + " A" + R + " " + R + " 0 0 1 " + p(R, a1) + " L" + p(r, a1) + " A" + r + " " + r + ' 0 0 0 ' + p(r, a0) + 'z"/>' +
+        '<text class="pk-label' + (lab === "Mix" ? " pk-label-dark" : "") + '" x="100" y="32" transform="rotate(' + mid + ' 100 100)">' + lab + "</text>";
+    });
+    return '<svg viewBox="0 0 200 200" aria-hidden="true" focusable="false"><circle cx="100" cy="100" r="98" class="wheel-rim"/>' +
+      '<g class="wheel-spin">' + out + '<circle cx="100" cy="100" r="38" class="wheel-hub"/></g>' +
+      '<text x="100" y="106" class="wheel-hub-label">SPIN</text><path d="M92 0 L108 0 L100 16 z" class="wheel-pointer"/></svg>';
+  }
+  function wheelInit(live) {
+    var btn = document.getElementById("wheel"), dlg = document.getElementById("wheel-q"); if (!btn || !dlg) return;
+    var spinG = btn.querySelector(".wheel-spin"), turn = 0, lastQ = null, units = {};
+    var bank = [];
+    live.forEach(function (slug) { var sj = DR.subjects[slug]; if (!sj) return; (sj.units || []).forEach(function (u) { units[u.code] = u; }); (sj.quiz || []).forEach(function (q) { bank.push(q); }); });
+    if (!bank.length) { btn.parentNode.hidden = true; return; }
+    var still = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    btn.addEventListener("click", function () {
+      if (btn.disabled) return;
+      btn.disabled = true;
+      var k = Math.floor(Math.random() * POCKETS.length), seg = 360 / POCKETS.length, jitter = (Math.random() - 0.5) * seg * 0.6;
+      var target = 360 - (k * seg + seg / 2) + jitter;
+      turn = turn - (turn % 360) + 360 * 5 + target;
+      spinG.style.transform = "rotate(" + turn + "deg)";
+      setTimeout(function () { btn.disabled = false; ask(POCKETS[k]); }, still ? 200 : 4200);
+    });
+    function ask(pocket) {
+      var pool = bank.filter(function (q) { return (pocket === "Mix" || q[0] === pocket) && q[1] !== lastQ; });
+      var q = pool[Math.floor(Math.random() * pool.length)], u = units[q[0]];
+      lastQ = q[1];
+      var opts = shuffle(q.slice(2, 6));
+      dlg.innerHTML = '<p class="kicker">' + (pocket === "Mix" ? "Mix: any unit. This one is " : "") + "Unit " + esc(q[0]) + (u ? ": " + esc(u.title) : "") + '</p><h2 id="wheel-q-h">' + esc(q[1]) + "</h2>" +
+        '<div class="quiz-opts">' + opts.map(function (o) { return '<button type="button" class="quiz-opt" data-right="' + (o === q[2] ? "1" : "0") + '">' + esc(o) + "</button>"; }).join("") + "</div>" +
+        '<p class="quiz-result" aria-live="polite"></p><div class="btn-row"><button type="button" class="btn" data-act="again" hidden>Spin again</button><button type="button" class="btn btn-ghost" data-act="close">Close</button></div>';
+      dlg.showModal();
+      dlg.querySelector(".quiz-opt").focus();
+      dlg.onclick = function (ev) {
+        var act = ev.target.closest("[data-act]");
+        if (act) { dlg.close(); if (act.getAttribute("data-act") === "again") btn.click(); return; }
+        var b = ev.target.closest(".quiz-opt"); if (!b || dlg.querySelector(".quiz-opt[disabled]")) return;
+        var right = b.getAttribute("data-right") === "1", st = quizStore(), msg;
+        if (right && !st.banked[q[1]]) { st.banked[q[1]] = true; st.pence += 5; msg = "Right! 5p goes in the jar."; }
+        else if (right) msg = "Right! You've already banked this one, so no 5p this time.";
+        else { st.pence -= 5; msg = "Not this time. 5p comes out of the jar. The answer is: " + q[2]; }
+        store.write("wheel", st);
+        [].forEach.call(dlg.querySelectorAll(".quiz-opt"), function (o) {
+          o.disabled = true;
+          if (o.getAttribute("data-right") === "1") { o.classList.add("is-right"); o.insertAdjacentHTML("afterbegin", '<span class="tag">Right answer</span>'); }
+          else if (o === b) { o.classList.add("is-wrong"); o.insertAdjacentHTML("afterbegin", '<span class="tag">Your answer</span>'); }
+        });
+        var res = dlg.querySelector(".quiz-result"); res.textContent = msg; res.className = "quiz-result " + (right ? "good" : "bad");
+        var again = dlg.querySelector('[data-act="again"]'); again.hidden = false; again.focus();
+        var jarEl = document.querySelector(".jar"); if (jarEl) jarEl.outerHTML = jarHtml(true);
+      };
+    }
+  }
+
   function payHtml(sess) {
     if (!DR.pay) return "";
     var P = DR.pay, d = payDay(sess);
@@ -262,7 +332,8 @@
             : '<p><span class="chip">Coming soon</span></p><p>Not yet. Enjoy it while it lasts.</p>') + "</article>";
       }).join("");
       frame("", null,
-        '<div class="hero"><div><h1>Right then, Dougie.</h1><p class="lede">This is your revision lab. The plan, the timer and the pay are all in here, so there\'s nothing to work out. Turn up, do the thing on screen, move on when the timer says so.</p></div><div class="portal" aria-hidden="true"></div></div>' +
+        '<div class="hero"><div><h1>Right then, Dougie.</h1><p class="lede">This is your revision lab. The plan, the timer and the pay are all in here, so there\'s nothing to work out. Turn up, do the thing on screen, move on when the timer says so.</p></div><div class="wheel-wrap"><button type="button" class="wheel" id="wheel" aria-label="Spin Dougie\'s Wheel of Fortune for a question">' + wheelSvg() + '</button><p class="wheel-cap"><strong>Dougie\'s Wheel of Fortune</strong><br>Tap to spin. Right first time: +5p. Wrong: 5p off.</p></div></div>' +
+        '<dialog class="quiz" id="wheel-q" aria-labelledby="wheel-q-h"></dialog>' +
         '<div id="hub-now" aria-live="polite"></div>' +
         jarHtml() +
         '<section class="section" aria-labelledby="subjects-h"><h2 id="subjects-h">Your subjects</h2><div class="grid grid-3">' + cards + "</div></section>");
@@ -286,6 +357,7 @@
         if (box.getAttribute("data-html") !== html) { box.innerHTML = html; box.setAttribute("data-html", html); }
       }
       tick(); setInterval(tick, 1000);
+      wheelInit(live);
     });
   }
 

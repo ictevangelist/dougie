@@ -18,3 +18,7 @@ Every page has `<meta name="robots" content="noindex, nofollow">`, `robots.txt` 
 
 ## After changing assets or data
 Bump the version so browsers fetch the new files: run `V=$(cat assets/site.css assets/site.js data/*.js | md5sum | cut -c1-8)` and replace the `window.DR_V = "..."` value in every `index.html` and `404.html` with it.
+
+## Dougie's Wheel of Fortune
+
+The wheel on the hub lands on a unit and asks a question from that subject's `quiz` list in its data file (unit, question, right answer, three wrong answers; the options are shuffled on screen). A right answer adds 5p to the money jar the first time that question is answered correctly; a wrong answer always takes 5p off. Saved in localStorage under `dougie-revision:wheel`.
