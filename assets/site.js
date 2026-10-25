@@ -204,9 +204,9 @@
   function payHtml(sess) {
     if (!DR.pay) return "";
     var P = DR.pay, d = payDay(sess);
-    return '<div class="pay section"><p style="margin:0"><strong>' + money(P.perDay) + "</strong> <span>for today, once every slot is ticked and every quiz score is in.</span></p>" +
+    return '<div class="pay section"><p style="margin:0"><strong>' + money(P.perDay) + "</strong> <span>for the morning, once every slot is ticked and every quiz score is in.</span></p>" +
       '<p style="margin:0"><strong>' + money(P.perDay * 2) + "</strong> <span>instead, if there are no arguments. Do " + P.days + " days in a row like that and it's " + money(P.perDay * 2 * P.days) + " instead of " + money(P.perDay * P.days) + ". Dad decides on the arguments.</span></p>" +
-      '<p style="margin:0" class="muted">Today is day ' + d + " of " + P.days + ".</p></div>";
+      '<p style="margin:0" class="muted">This is day ' + d + " of " + P.days + ".</p></div>";
   }
 
 
