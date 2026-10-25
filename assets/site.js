@@ -423,6 +423,7 @@
         '<p class="countdown">' + clockText(st.left) + "<small>" + (isBreak ? "until you're back on" : "left on this one") + "</small></p>" +
         (sl.note ? '<p class="note"><strong>' + esc(sl.note) + "</strong></p>" : "") +
         '<ol class="steps">' + steps(sl).map(function (s) { return "<li>" + esc(s) + "</li>"; }).join("") + "</ol>" +
+        (sl.type === "report" && subj.stuck ? '<div class="stuck"><p class="stuck-h">' + esc(subj.stuck.title) + "</p><ol>" + subj.stuck.lines.map(function (s) { return "<li>" + esc(s) + "</li>"; }).join("") + "</ol>" + (subj.stuck.dad ? '<p class="stuck-dad">' + esc(subj.stuck.dad) + "</p>" : "") + "</div>" : "") +
         '<div class="btn-row">' + (isBreak ? "" : missionLink(sl) + '<a class="btn btn-ghost" href="#slot-' + st.i + '">Go to this slot</a>') +
         '<button type="button" class="btn btn-ghost" id="focus-btn" aria-pressed="' + (focus ? "true" : "false") + '">' + (focus ? "Show everything" : "Focus mode") + "</button></div>" + nextLine + "</section>";
     }

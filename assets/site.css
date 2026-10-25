@@ -105,6 +105,12 @@ main { padding: var(--space-5) 0 var(--space-7); }
 .countdown small { font-size: var(--step-1); font-weight: 700; color: var(--ink-2); margin-left: var(--space-2); }
 .steps { margin: 0 0 var(--space-4); padding-left: 1.4em; }
 .steps li { margin-bottom: var(--space-2); }
+/* The "can't remember" panel: Sun Flower border, Clouds text on Midnight (9.57) */
+.stuck { border: 4px solid #F1C40F; border-radius: var(--radius); background: var(--space); padding: var(--space-4) var(--space-5); margin: 0 0 var(--space-4); }
+.stuck-h { font-family: "Exo 2", sans-serif; font-weight: 800; font-size: var(--step-3); line-height: 1.2; color: #F1C40F; margin: 0 0 var(--space-2); }
+.stuck ol { margin: 0; padding-left: 1.4em; font-size: var(--step-1); font-weight: 600; }
+.stuck li { margin-bottom: var(--space-1); }
+.stuck-dad { margin: var(--space-3) 0 0; padding-top: var(--space-3); border-top: 1px solid var(--line); font-size: var(--step-1); font-weight: 600; }
 .next { color: var(--ink-2); margin-top: var(--space-3); margin-bottom: 0; }
 .next strong { color: var(--ink); }
 .pay { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); align-items: center; background: rgba(46, 204, 113, .10); border: 1px dashed var(--portal); border-radius: var(--radius); padding: var(--space-3) var(--space-4); }
