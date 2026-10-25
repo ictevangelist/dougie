@@ -307,3 +307,19 @@ a, button, label, summary { -webkit-tap-highlight-color: rgba(46, 204, 113, .25)
 .erl summary { cursor: pointer; font-weight: 700; min-height: var(--tap); display: flex; align-items: center; }
 .erl .label { font-weight: 700; margin: var(--space-3) 0 var(--space-1); }
 .clock-row { margin-bottom: var(--space-3); }
+
+/* The prize ladder in the money jar: Midnight rungs with Clouds text (9.57); the current rung Sun Flower with Midnight text (6.61) and a "You're here" label */
+.jar { align-items: start; }
+.ladder { margin-top: var(--space-4); border-top: 1px solid var(--line); padding-top: var(--space-4); }
+.ladder h3 { font-size: var(--step-2); margin: 0 0 var(--space-2); }
+.ladder-next { font-size: var(--step-1); margin: 0 0 var(--space-3); }
+.ladder-next strong { color: #F1C40F; }
+.ladder-bar { height: 14px; border-radius: var(--pill); background: var(--space); border: 1px solid var(--line); overflow: hidden; margin-bottom: var(--space-3); }
+.ladder-bar i { display: block; height: 100%; background: #F1C40F; }
+.rungs { list-style: none; margin: 0 0 var(--space-2); padding: 0; display: grid; gap: var(--space-1); }
+.rung { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-1) var(--space-3); background: var(--space); border-radius: var(--radius-s); padding: 8px 12px; border: 2px solid transparent; }
+.rung-band { font-weight: 600; min-width: 9em; }
+.rung-prize { font-family: "Exo 2", sans-serif; font-weight: 800; }
+.rung.is-past { color: var(--ink-2); }
+.rung.is-now { background: #F1C40F; color: #2C3E50; border-color: #F1C40F; }
+.rung-here { margin-left: auto; font-size: var(--step--1); font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
