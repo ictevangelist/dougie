@@ -300,10 +300,10 @@
     var lvl = Math.floor(totalP / STEP), rungs = Math.floor(maxP / STEP), out = "", toGo = (lvl + 1) * STEP - totalP;
     for (var r = 0; r <= rungs; r++) {
       var here = r === lvl;
-      out += '<li class="rung' + (here ? " is-now" : r < lvl ? " is-past" : "") + '"><span class="rung-band">' + (r === rungs ? pounds(r * STEP) + " and up" : pounds(r * STEP) + " to " + pounds((r + 1) * STEP)) + '</span><span class="rung-prize">' + pence(5 + 2.5 * r) + " a right answer</span>" + (here ? '<span class="rung-here">You\'re here</span>' : "") + "</li>";
+      out += '<li class="rung' + (here ? " is-now" : r < lvl ? " is-past" : "") + '"><span class="rung-band">' + (r === rungs ? pounds(r * STEP) + " and up" : pounds(r * STEP) + " to " + pounds((r + 1) * STEP)) + '</span><span class="rung-prize">' + pence(5 + 2.5 * r) + " a right answer</span>" + (r < rungs ? '<span class="rung-count">' + Math.ceil(STEP / (5 + 2.5 * r)) + " right answers to climb it</span>" : "") + (here ? '<span class="rung-here">You\'re here</span>' : "") + "</li>";
     }
     return '<div class="ladder"><h3>The more you bank, the more each answer is worth</h3>' +
-      '<p class="ladder-next">Every right answer is worth <strong>' + pence(prize(totalP)) + "</strong> now. " + (lvl < rungs ? "Bank " + (toGo < 100 ? pence(toGo) : pounds(toGo)) + " more and it goes up to <strong>" + pence(prize(totalP) + 2.5) + "</strong>." : "That's the top rung.") + "</p>" +
+      '<p class="ladder-next">Every right answer is worth <strong>' + pence(prize(totalP)) + "</strong> now. " + (lvl < rungs ? "Get <strong>" + Math.ceil(toGo / prize(totalP)) + " more right</strong> (" + (toGo < 100 ? pence(toGo) : pounds(toGo)) + ") and it goes up to <strong>" + pence(prize(totalP) + 2.5) + "</strong>." : "That's the top rung.") + "</p>" +
       '<div class="ladder-bar" role="progressbar" aria-label="Progress to the next rung" aria-valuemin="0" aria-valuemax="' + STEP + '" aria-valuenow="' + (STEP - toGo) + '"><i style="width:' + ((STEP - toGo) / STEP * 100).toFixed(1) + '%"></i></div>' +
       '<ol class="rungs">' + out + "</ol><p class=\"muted\">A wrong answer always takes 5p off, and dropping below a rung drops the prize back down.</p></div>";
   }

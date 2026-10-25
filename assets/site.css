@@ -322,4 +322,5 @@ a, button, label, summary { -webkit-tap-highlight-color: rgba(46, 204, 113, .25)
 .rung-prize { font-family: "Exo 2", sans-serif; font-weight: 800; }
 .rung.is-past { color: var(--ink-2); }
 .rung.is-now { background: #F1C40F; color: #2C3E50; border-color: #F1C40F; }
+.rung-count { font-size: var(--step--1); }
 .rung-here { margin-left: auto; font-size: var(--step--1); font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
