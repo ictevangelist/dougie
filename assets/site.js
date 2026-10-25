@@ -86,7 +86,7 @@
         '<p><button type="button" class="btn btn-big" id="signin">Sign in with Google</button></p></div></div>', "Sign in");
       document.getElementById("signin").addEventListener("click", function () {
         var fb = window.firebase, pr = new fb.auth.GoogleAuthProvider(); pr.setCustomParameters({ prompt: "select_account" });
-        fb.auth().signInWithPopup(pr).catch(function (e) { if (e && e.code !== "auth/popup-closed-by-user") cloud.gate("Sign-in didn't work. Try again."); });
+        fb.auth().signInWithPopup(pr).catch(function (e) { if (e && e.code !== "auth/popup-closed-by-user") cloud.gate("Sign-in didn't work. Try again. (Google said: " + (e.code || e.message) + ")"); });
       });
     }
   };
