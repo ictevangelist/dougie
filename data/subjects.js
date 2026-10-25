@@ -5,7 +5,8 @@ window.DR = window.DR || {};
 DR.subjects = DR.subjects || {};
 /* Pay: perDay for each morning, unlocked when every slot is ticked and every quiz score is in.
    No arguments doubles a day to perDay x 2, but the doubling only counts over a run of "days" days. Dad decides on the arguments. */
-DR.pay = { currency: "\u00a3", perDay: 5, days: 3 };
+/* calmDays: the dates Dad confirms had no arguments, for example ["2026-10-26"]. The money jar on the hub reads them. */
+DR.pay = { currency: "\u00a3", perDay: 5, days: 3, calmDays: [] };
 DR.registry = [
   {
     slug: "biology",

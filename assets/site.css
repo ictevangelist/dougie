@@ -109,7 +109,22 @@ main { padding: var(--space-5) 0 var(--space-7); }
 .next strong { color: var(--ink); }
 .pay { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); align-items: center; background: rgba(46, 204, 113, .10); border: 1px dashed var(--portal); border-radius: var(--radius); padding: var(--space-3) var(--space-4); }
 .pay strong { font-family: "Exo 2", sans-serif; font-size: var(--step-2); color: var(--portal); }
-.pay span { color: var(--ink); }
+.pay span, .pay .muted { color: var(--ink); }
+/* The money jar on the hub: Sun Flower coins behind Clouds glass; labels in Silver on Wet Asphalt (5.22) */
+.jar { display: grid; grid-template-columns: 220px 1fr; gap: var(--space-5); align-items: center; }
+.jar-svg { width: 100%; height: auto; display: block; }
+.jar-glass { fill: rgba(236, 240, 241, .06); stroke: var(--ink); stroke-width: 4; }
+.jar-lid { fill: var(--ink-2); }
+.jar-fill { fill: #F1C40F; }
+.jar-coins { transform-box: fill-box; transform-origin: bottom; }
+.jar-shine { fill: #F39C12; }
+.jar-tick { stroke: var(--ink-2); stroke-width: 2; }
+.jar-label { fill: var(--ink-2); font-family: "Poppins", sans-serif; font-size: 13px; font-weight: 600; }
+.jar-total { font-family: "Exo 2", sans-serif; font-weight: 800; font-size: var(--step-5); line-height: 1; color: #F1C40F; margin: var(--space-2) 0 var(--space-3); }
+.jar-total small { font-size: var(--step-1); font-weight: 700; color: var(--ink-2); margin-left: var(--space-2); }
+@media (prefers-reduced-motion: no-preference) { .jar-coins { animation: jar-up 1.2s ease-out; } }
+@keyframes jar-up { from { transform: scaleY(0); } }
+@media (max-width: 699px) { .jar { grid-template-columns: 1fr; } .jar-svg { max-width: 200px; margin: 0 auto; } }
 
 /* Units and reports */
 .unit { padding: 0; overflow: hidden; }

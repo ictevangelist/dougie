@@ -201,6 +201,46 @@
     return i < 0 ? 1 : (i % days) + 1;
   }
   function money(n) { return (DR.pay.currency || "") + n; }
+  /* The money jar: perDay for each finished session saved on this device (every slot ticked, every quiz score in).
+     A run of "days" sessions that are all finished and all on Dad's calmDays list doubles, so 3 calm days make 3 x perDay x 2. */
+  function jarTotals() {
+    var P = DR.pay, all = [];
+    (DR.registry || []).forEach(function (r) {
+      var sj = DR.subjects[r.slug]; if (!sj) return;
+      var saved = (store.read(r.slug).sessions) || {};
+      (sj.sessions || []).forEach(function (x) {
+        var ss = saved[x.date] || { done: {}, reports: {} }, ok = true;
+        x.slots.forEach(function (sl, i) {
+          if (sl.type === "break") return;
+          if (!ss.done[i]) ok = false;
+          if (sl.type === "report") { var rp = (ss.reports || {})[sl.report]; if (!rp || rp.score === undefined || rp.score === "") ok = false; }
+        });
+        all.push({ key: x.date + " " + x.start, date: x.date, earned: ok });
+      });
+    });
+    all.sort(function (a, b) { return a.key < b.key ? -1 : 1; });
+    var calm = P.calmDays || [], total = 0, runs = Math.max(1, Math.ceil(all.length / P.days)), last = runs - 1, calmInRun = 0;
+    for (var r = 0; r < runs; r++) {
+      var run = all.slice(r * P.days, r * P.days + P.days), full = run.length === P.days, allCalm = full;
+      run.forEach(function (d) { if (d.earned) total += P.perDay; if (!(d.earned && calm.indexOf(d.date) > -1)) allCalm = false; });
+      if (allCalm) total += P.perDay * P.days;
+      if (r === last) calmInRun = run.filter(function (d) { return d.earned && calm.indexOf(d.date) > -1; }).length;
+    }
+    return { total: total, max: runs * P.days * P.perDay * 2, calm: calmInRun };
+  }
+  function jarHtml() {
+    if (!DR.pay) return "";
+    var P = DR.pay, j = jarTotals(), f = Math.min(1, j.total / j.max), top = 40, bottom = 250, h = (bottom - top) * f, ticks = "";
+    for (var k = 1; k <= 3; k++) { var y = bottom - (bottom - top) * k / 3; ticks += '<line x1="150" x2="164" y1="' + y + '" y2="' + y + '" class="jar-tick"/><text x="170" y="' + (y + 5) + '" class="jar-label">' + money(j.max * k / 3) + "</text>"; }
+    return '<section class="card jar section" style="--accent-dark:#F1C40F" aria-labelledby="jar-h"><svg class="jar-svg" viewBox="0 0 210 270" role="img" aria-label="Money jar: ' + money(j.total) + " of " + money(j.max) + '">' +
+      '<defs><clipPath id="jar-clip"><path d="M40 40 h90 v10 q20 10 20 40 v140 q0 20 -20 20 h-90 q-20 0 -20 -20 v-140 q0 -30 20 -40 z"/></clipPath></defs>' +
+      '<g clip-path="url(#jar-clip)"><g class="jar-coins"><rect class="jar-fill" x="0" y="' + (bottom - h) + '" width="170" height="' + h + '"/>' + (h ? '<rect class="jar-shine" x="0" y="' + (bottom - h) + '" width="170" height="6"/>' : "") + "</g></g>" +
+      '<path class="jar-glass" d="M40 40 h90 v10 q20 10 20 40 v140 q0 20 -20 20 h-90 q-20 0 -20 -20 v-140 q0 -30 20 -40 z"/>' +
+      '<rect class="jar-lid" x="34" y="22" width="102" height="20" rx="6"/>' + ticks + "</svg>" +
+      '<div><h2 id="jar-h">The money jar</h2><p class="jar-total">' + money(j.total) + "<small>in the jar so far</small></p>" +
+      "<p>Every finished morning adds " + money(P.perDay) + ". Finished means every slot ticked and every quiz score in. Do " + P.days + " mornings in a row with no arguments and they count double, so the jar fills to " + money(P.perDay * 2 * P.days) + ".</p>" +
+      '<p class="muted">Calm mornings Dad has confirmed this run: ' + j.calm + " of " + P.days + ". The jar counts what's saved on this device.</p></div></section>";
+  }
   function payHtml(sess) {
     if (!DR.pay) return "";
     var P = DR.pay, d = payDay(sess);
@@ -224,6 +264,7 @@
       frame("", null,
         '<div class="hero"><div><h1>Right then, Dougie.</h1><p class="lede">This is your revision lab. The plan, the timer and the pay are all in here, so there\'s nothing to work out. Turn up, do the thing on screen, move on when the timer says so.</p></div><div class="portal" aria-hidden="true"></div></div>' +
         '<div id="hub-now" aria-live="polite"></div>' +
+        jarHtml() +
         '<section class="section" aria-labelledby="subjects-h"><h2 id="subjects-h">Your subjects</h2><div class="grid grid-3">' + cards + "</div></section>");
       function tick() {
         var box = document.getElementById("hub-now"); if (!box) return;
