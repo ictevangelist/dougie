@@ -72,10 +72,6 @@ DR.subjects.biology = {
       start: "09:00",
       end: "12:35",
       breaks: [{ start: "11:15", end: "11:35" }],
-      rewards: [
-        { amount: "\u00a35", label: "for doing the morning", unlock: "all" },
-        { amount: "\u00a310", label: "more for doing it without any arguments", unlock: "dad" }
-      ],
       slots: [
         { start: "09:00", end: "09:05", type: "setup", title: "Get set up", note: "Open the notebook, check it loads and find report 4.1a." },
         { start: "09:05", end: "09:17", type: "report", report: "4.1a" },

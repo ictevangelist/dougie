@@ -3,6 +3,9 @@
    status "live" loads the subject's data file; "soon" shows a Coming soon card and page. */
 window.DR = window.DR || {};
 DR.subjects = DR.subjects || {};
+/* Pay: perDay for each morning, unlocked when every slot is ticked and every quiz score is in.
+   No arguments doubles a day to perDay x 2, but the doubling only counts over a run of "days" days. Dad decides on the arguments. */
+DR.pay = { currency: "\u00a3", perDay: 5, days: 3 };
 DR.registry = [
   {
     slug: "biology",

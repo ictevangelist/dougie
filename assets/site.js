@@ -192,10 +192,23 @@
     });
     return best;
   }
-  function payHtml(sess) {
-    if (!sess.rewards || !sess.rewards.length) return "";
-    return '<div class="pay section">' + sess.rewards.map(function (r) { return "<p style=\"margin:0\"><strong>" + esc(r.amount) + "</strong> <span>" + esc(r.label) + "</span></p>"; }).join("") + "</div>";
+  /* Pay: which day of the run of days a session is, across every live subject */
+  function payDay(sess) {
+    var all = [];
+    (DR.registry || []).forEach(function (r) { var sj = DR.subjects[r.slug]; if (sj) (sj.sessions || []).forEach(function (x) { all.push(x.date + " " + x.start); }); });
+    all.sort();
+    var i = all.indexOf(sess.date + " " + sess.start), days = (DR.pay && DR.pay.days) || 3;
+    return i < 0 ? 1 : (i % days) + 1;
   }
+  function money(n) { return (DR.pay.currency || "") + n; }
+  function payHtml(sess) {
+    if (!DR.pay) return "";
+    var P = DR.pay, d = payDay(sess);
+    return '<div class="pay section"><p style="margin:0"><strong>' + money(P.perDay) + "</strong> <span>for today, once every slot is ticked and every quiz score is in.</span></p>" +
+      '<p style="margin:0"><strong>' + money(P.perDay * 2) + "</strong> <span>instead, if there are no arguments. Do " + P.days + " days in a row like that and it's " + money(P.perDay * 2 * P.days) + " instead of " + money(P.perDay * P.days) + ". Dad decides on the arguments.</span></p>" +
+      '<p style="margin:0" class="muted">Today is day ' + d + " of " + P.days + ".</p></div>";
+  }
+
 
   /* ---------- hub ---------- */
   function pageHub() {
@@ -285,7 +298,8 @@
   function pageSession(slug, date) {
     var reg = registryItem(slug);
     if (!reg || reg.status !== "live") return pageNotFound();
-    loadSubjects([slug], function () {
+    var live = (DR.registry || []).filter(function (r) { return r.status === "live"; }).map(function (r) { return r.slug; });
+    loadSubjects(live, function () {
       var subj = DR.subjects[slug]; if (!subj) return pageNotFound();
       var sess = (subj.sessions || []).filter(function (s) { return s.date === date; })[0];
       if (!sess) return pageNotFound();
@@ -379,17 +393,22 @@
         if (r && c[r.rating]) c[r.rating].push(name);
         if (r && r.score !== undefined && r.score !== "") scores.push(name + ": " + r.score + "/10");
       });
-      return { n: n, c: c, scores: scores };
+      var missing = sess.slots.filter(function (s) { if (s.type !== "report") return false; var x = ss.reports[s.report]; return !x || x.score === undefined || x.score === ""; }).length;
+      return { n: n, c: c, scores: scores, missing: missing };
     }
     function completeHtml() {
-      var r = results(), all = r.n === total;
-      var pay = (sess.rewards || []).map(function (w) {
-        var state = w.unlock === "all" ? (all ? "Unlocked." : "Tick the last " + (total - r.n) + " slot" + (total - r.n === 1 ? "" : "s") + " to unlock it.") : "Dad decides.";
-        return "<li><strong>" + esc(w.amount) + "</strong> " + esc(w.label) + ": " + state + "</li>";
-      }).join("");
+      var r = results(), all = r.n === total, earned = all && r.missing === 0, pay = "", payLine = "";
+      if (DR.pay) {
+        var todo = [];
+        if (!all) todo.push("tick the last " + (total - r.n) + " slot" + (total - r.n === 1 ? "" : "s"));
+        if (r.missing) todo.push("add " + r.missing + " more quiz score" + (r.missing === 1 ? "" : "s"));
+        pay = "<li><strong>" + money(DR.pay.perDay) + "</strong> for today: " + (earned ? "unlocked." : "to unlock it, " + todo.join(" and ") + ".") + "</li>" +
+          "<li><strong>" + money(DR.pay.perDay * 2) + "</strong> instead if there were no arguments: Dad decides. This was day " + payDay(sess) + " of " + DR.pay.days + ".</li>";
+        payLine = "\nPay: " + money(DR.pay.perDay) + (earned ? " unlocked" : " not unlocked yet") + ", day " + payDay(sess) + " of " + DR.pay.days;
+      }
       var text = sess.title + ", " + longDate(date) + "\nSlots done: " + r.n + " of " + total +
         "\nRed: " + (r.c.red.join(", ") || "none") + "\nAmber: " + (r.c.amber.join(", ") || "none") + "\nGreen: " + (r.c.green.join(", ") || "none") +
-        (r.scores.length ? "\nQuiz scores: " + r.scores.join(", ") : "");
+        (r.scores.length ? "\nQuiz scores: " + r.scores.join(", ") : "") + payLine;
       return '<section class="mission complete" aria-labelledby="m-h"><p class="kicker">Done</p><h2 id="m-h">Session complete</h2>' +
         "<p>You ticked " + r.n + " of " + total + " slots." + (all ? " All of them. Respect." : "") + "</p>" +
         '<ul class="counts"><li class="count count-red">Red ' + r.c.red.length + '</li><li class="count count-amber">Amber ' + r.c.amber.length + '</li><li class="count count-green">Green ' + r.c.green.length + "</li></ul>" +
