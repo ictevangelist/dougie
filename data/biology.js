@@ -13,16 +13,17 @@ DR.subjects.biology = {
   checkPrompt: "Based on the quizzes and flashcards I have just done for Unit {unit}, what are my three weakest areas, and what one thing should I do to fix each one? Keep it short.",
   checkNote: "Paste this into the notebook chat, then press Save to note on the answer.",
   steps: {
-    report: ["Do the first quiz, before you read anything.", "Go through the key terms flashcards.", "Read the exam mistakes section.", "Time left? Do the final quiz, then the second flashcard set."],
+    report: ["Do the first quiz, before you read anything.", "Go through the key terms flashcards.", "Read the exam mistakes section.", "Time left? Do the final quiz, then the second flashcard set.", "Can't remember something? Try hard first. Your CGP book and knowledge organiser are a last resort, and write down anything you couldn't remember as a note."],
     check: ["Copy the prompt below.", "Paste it into the notebook chat.", "Press Save to note on the answer."],
-    setup: ["Open the notebook.", "Check it loads.", "Find report 4.1a in the Studio panel."]
+    setup: ["Put your CGP book, your knowledge organiser and some paper for notes next to you.", "Open the notebook.", "Check it loads.", "Find report 4.1a in the Studio panel."]
   },
   howTo: [
     "Every report lives in one Gemini Notebook. Open the notebook, then open each report from the Studio panel by its code, for example 4.1a.",
     "Inside each report, do the first quiz BEFORE reading anything. Getting things wrong at this stage is useful, because it shows what to focus on.",
     "The order of work in each slot is: (1) the first quiz, (2) the key terms flashcards, (3) the exam mistakes section. Then, (4) if there's time, the final quiz and the second flashcard set.",
     "When a slot's time is up, move on, even if you haven't finished. Getting through everything matters more than finishing every part today.",
-    "After each unit, copy the unit check prompt into the notebook chat, then press \"Save to note\" on the answer."
+    "After each unit, copy the unit check prompt into the notebook chat, then press \"Save to note\" on the answer.",
+    "You can use your CGP book and your knowledge organiser whenever you want, but only as a last resort, when you really can't remember something. Anything you can't remember, write it down as a note."
   ],
   units: [
     {
