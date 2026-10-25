@@ -25,11 +25,12 @@ DR.subjects.biology = {
     "The order of work in each slot is: (1) the first quiz, (2) the key terms flashcards, (3) the exam mistakes section. Then, (4) if there's time, the final quiz and the second flashcard set.",
     "When a slot's time is up, move on, even if you haven't finished. Getting through everything matters more than finishing every part today.",
     "After each unit, copy the unit check prompt into the notebook chat, then press \"Save to note\" on the answer.",
+    "When the session's over, the box at the top of the page asks you to send your results to Dad. Do it straight away: press Send my results to Dad and send him the message.",
     "You can use your CGP book and your knowledge organiser whenever you want, but only as a last resort, when you really can't remember something. Anything you can't remember, write it down as a note.",
     "You can ask Dad for help wherever and whenever you want, as long as he's not in a meeting."
   ],
   /* The quiz wheel on the hub. Each entry: unit, question, the right answer, then three wrong answers.
-     The options are shuffled on screen. A right answer pays 5p the first time only; a wrong answer takes 5p off. */
+     The options are shuffled on screen. A right answer adds 5p to the money jar the first time only; a wrong answer takes 5p off. */
   quiz: [
     ["4.1", "Which part of a cell controls its activities and holds its genetic material?", "The nucleus", "The cytoplasm", "The cell membrane", "The ribosomes"],
     ["4.1", "Where in a cell does aerobic respiration happen?", "In the mitochondria", "In the ribosomes", "In the chloroplasts", "In the nucleus"],

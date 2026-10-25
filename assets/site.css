@@ -110,12 +110,12 @@ main { padding: var(--space-5) 0 var(--space-7); }
 .stuck-h { font-family: "Exo 2", sans-serif; font-weight: 800; font-size: var(--step-3); line-height: 1.2; color: #F1C40F; margin: 0 0 var(--space-2); }
 .stuck ol { margin: 0; padding-left: 1.4em; font-size: var(--step-1); font-weight: 600; }
 .stuck li { margin-bottom: var(--space-1); }
+.send-dad .btn { margin-top: var(--space-2); }
+.send-dad p:not(.stuck-h) { font-size: var(--step-1); font-weight: 600; margin: 0; }
+.send-dad .send-note:not(:empty) { margin-top: var(--space-2); }
 .stuck-dad { margin: var(--space-3) 0 0; padding-top: var(--space-3); border-top: 1px solid var(--line); font-size: var(--step-1); font-weight: 600; }
 .next { color: var(--ink-2); margin-top: var(--space-3); margin-bottom: 0; }
 .next strong { color: var(--ink); }
-.pay { display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-4); align-items: center; background: rgba(46, 204, 113, .10); border: 1px dashed var(--portal); border-radius: var(--radius); padding: var(--space-3) var(--space-4); }
-.pay strong { font-family: "Exo 2", sans-serif; font-size: var(--step-2); color: var(--portal); }
-.pay span, .pay .muted { color: var(--ink); }
 /* The money jar on the hub: Sun Flower coins behind Clouds glass; labels in Silver on Wet Asphalt (5.22) */
 .jar { display: grid; grid-template-columns: 220px 1fr; gap: var(--space-5); align-items: center; }
 .jar-svg { width: 100%; height: auto; display: block; }
@@ -234,7 +234,7 @@ main { padding: var(--space-5) 0 var(--space-7); }
 .summary-box { white-space: pre-wrap; background: var(--space); border: 1px solid var(--line); border-radius: var(--radius-s); padding: var(--space-3); font-size: var(--step--1); margin: var(--space-3) 0; }
 .reset { margin-top: var(--space-6); }
 .reset .confirm { margin-top: var(--space-2); display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2); }
-body.focus .howto, body.focus .nb-row, body.focus .timeline > li:not(.is-now), body.focus .reset, body.focus .pay { display: none; }
+body.focus .howto, body.focus .nb-row, body.focus .timeline > li:not(.is-now), body.focus .reset { display: none; }
 
 .site-footer { border-top: 1px solid var(--line); padding: var(--space-5) 0 var(--space-6); font-size: var(--step--1); color: var(--ink-2); }
 .sessions-list { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--space-3); }
@@ -248,7 +248,7 @@ body.focus .howto, body.focus .nb-row, body.focus .timeline > li:not(.is-now), b
 @page { size: A4; margin: 12mm; }
 @media print {
   html, body { background: #fff !important; color: #2C3E50; font-size: 10pt; line-height: 1.35; }
-  .site-header, .crumbs, .skip, .btn, .linkbtn, .done, .after, .progress, .reset, .site-footer, .no-print, .find, .prompt, .prompt + .muted, #state, .portal, .mission, .pay { display: none !important; }
+  .site-header, .crumbs, .skip, .btn, .linkbtn, .done, .after, .progress, .reset, .site-footer, .no-print, .find, .prompt, .prompt + .muted, #state, .portal, .mission { display: none !important; }
   main { padding: 0; } .wrap { max-width: none; padding: 0; }
   h1 { font-size: 18pt; margin-bottom: 4pt; color: #2C3E50; }
   .panel, .card { background: #fff; color: #2C3E50; box-shadow: none; padding: 5pt 8pt; border-radius: 4pt; border: 1px solid #BDC3C7; }

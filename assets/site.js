@@ -282,66 +282,28 @@
     });
     return running || best;
   }
-  /* Pay: which day of the run of days a session is, across every live subject */
-  /* Order for pay runs: dated sessions by date and time; flexible ones by when they were first started, unstarted ones last */
-  function orderKey(x) {
-    if (x.date) return x.date + " " + x.start;
-    var c = clockOf(x);
-    return c && c.first ? todayIso(new Date(c.first)) + " " + new Date(c.first).toTimeString().slice(0, 5) + " " + x.id : "9999 " + x._slug + " " + x.id;
-  }
-  function payDay(sess) {
-    var all = [];
-    (DR.registry || []).forEach(function (r) { var sj = DR.subjects[r.slug]; if (sj) (sj.sessions || []).forEach(function (x) { all.push(orderKey(x)); }); });
-    all.sort();
-    var i = all.indexOf(orderKey(sess)), days = (DR.pay && DR.pay.days) || 3;
-    return i < 0 ? 1 : (i % days) + 1;
-  }
   function money(n) { return (DR.pay.currency || "") + n; }
-  /* The money jar: perDay for each finished session saved on this device (every slot ticked, every quiz score in).
-     A run of "days" sessions that are all finished and all on Dad's calmDays list doubles, so 3 calm days make 3 x perDay x 2. */
-  function jarTotals() {
-    var P = DR.pay, all = [];
-    (DR.registry || []).forEach(function (r) {
-      var sj = DR.subjects[r.slug]; if (!sj) return;
-      var saved = (store.read(r.slug).sessions) || {};
-      (sj.sessions || []).forEach(function (x) {
-        var ss = saved[skey(x)] || { done: {}, reports: {} }, ok = true;
-        x.slots.forEach(function (sl, i) {
-          if (sl.type === "break") return;
-          if (!ss.done[i]) ok = false;
-          if (sl.type === "report") { var rp = (ss.reports || {})[sl.report]; if (!rp || rp.score === undefined || rp.score === "") ok = false; }
-        });
-        all.push({ key: orderKey(x), date: skey(x), earned: ok });
-      });
-    });
-    all.sort(function (a, b) { return a.key < b.key ? -1 : 1; });
-    var calm = P.calmDays || [], total = 0, runs = Math.max(1, Math.ceil(all.length / P.days)), last = runs - 1, calmInRun = 0;
-    for (var r = 0; r < runs; r++) {
-      var run = all.slice(r * P.days, r * P.days + P.days), full = run.length === P.days, allCalm = full;
-      run.forEach(function (d) { if (d.earned) total += P.perDay; if (!(d.earned && calm.indexOf(d.date) > -1)) allCalm = false; });
-      if (allCalm) total += P.perDay * P.days;
-      if (r === last) calmInRun = run.filter(function (d) { return d.earned && calm.indexOf(d.date) > -1; }).length;
-    }
-    return { total: total, max: runs * P.days * P.perDay * 2, calm: calmInRun };
-  }
   function pounds(p) { return (p < 0 ? "-" : "") + (DR.pay.currency || "") + (Math.abs(p) % 100 ? (Math.abs(p) / 100).toFixed(2) : Math.abs(p) / 100); }
   function quizStore() { var q = store.read("wheel"); q.pence = q.pence || 0; q.banked = q.banked || {}; return q; }
+  /* The money jar fills only from Dougie's Wheel of Fortune: 5p the first time each question is right, 5p off for each wrong answer.
+     It is full when every question on the wheel has been banked. */
   function jarHtml(still) {
-    if (!DR.pay) return "";
-    var P = DR.pay, j = jarTotals(), q = quizStore(), totalP = Math.max(0, j.total * 100 + q.pence), maxP = j.max * 100;
-    var f = Math.min(1, totalP / maxP), top = 40, bottom = 250, h = (bottom - top) * f, ticks = "";
-    for (var k = 1; k <= 3; k++) { var y = bottom - (bottom - top) * k / 3; ticks += '<line x1="150" x2="164" y1="' + y + '" y2="' + y + '" class="jar-tick"/><text x="170" y="' + (y + 5) + '" class="jar-label">' + money(j.max * k / 3) + "</text>"; }
+    var q = quizStore(), n = 0;
+    Object.keys(DR.subjects).forEach(function (k) { if ((registryItem(k) || {}).status === "live") n += (DR.subjects[k].quiz || []).length; });
+    if (!n) return "";
+    var maxP = n * 5, totalP = Math.max(0, q.pence), f = Math.min(1, totalP / maxP), top = 40, bottom = 250, h = (bottom - top) * f, ticks = "";
+    for (var k = 1; k <= 4; k++) { var y = bottom - (bottom - top) * k / 4; ticks += '<line x1="150" x2="164" y1="' + y + '" y2="' + y + '" class="jar-tick"/><text x="170" y="' + (y + 5) + '" class="jar-label">' + pounds(Math.round(maxP * k / 4 / 5) * 5) + "</text>"; }
     var banked = Object.keys(q.banked).length;
-    return '<section class="card jar section' + (still ? " still" : "") + '" style="--accent-dark:#F1C40F" aria-labelledby="jar-h"><svg class="jar-svg" viewBox="0 0 210 270" role="img" aria-label="Money jar: ' + pounds(totalP) + " of " + money(j.max) + '">' +
+    return '<section class="card jar section' + (still ? " still" : "") + '" style="--accent-dark:#F1C40F" aria-labelledby="jar-h"><svg class="jar-svg" viewBox="0 0 230 270" role="img" aria-label="Money jar: ' + pounds(totalP) + " of " + pounds(maxP) + '">' +
       '<defs><clipPath id="jar-clip"><path d="M40 40 h90 v10 q20 10 20 40 v140 q0 20 -20 20 h-90 q-20 0 -20 -20 v-140 q0 -30 20 -40 z"/></clipPath></defs>' +
       '<g clip-path="url(#jar-clip)"><g class="jar-coins"><rect class="jar-fill" x="0" y="' + (bottom - h) + '" width="170" height="' + h + '"/>' + (h ? '<rect class="jar-shine" x="0" y="' + (bottom - h) + '" width="170" height="6"/>' : "") + "</g></g>" +
       '<path class="jar-glass" d="M40 40 h90 v10 q20 10 20 40 v140 q0 20 -20 20 h-90 q-20 0 -20 -20 v-140 q0 -30 20 -40 z"/>' +
       '<rect class="jar-lid" x="34" y="22" width="102" height="20" rx="6"/>' + ticks + "</svg>" +
       '<div><h2 id="jar-h">The money jar</h2><p class="jar-total">' + pounds(totalP) + "<small>in the jar so far</small></p>" +
-      "<p>Every finished morning adds " + money(P.perDay) + ". Finished means every slot ticked and every quiz score in. Do " + P.days + " mornings in a row with no arguments and they count double, so the jar fills to " + money(P.perDay * 2 * P.days) + ".</p>" +
-      "<p>Dougie's Wheel of Fortune: " + (q.pence >= 0 ? "+" : "") + pounds(q.pence) + " so far, from " + banked + " question" + (banked === 1 ? "" : "s") + " banked.</p>" +
-      '<p class="muted">Calm mornings Dad has confirmed this run: ' + j.calm + " of " + P.days + ". The jar counts what's saved on this device.</p></div></section>";
+      "<p>The jar fills from Dougie's Wheel of Fortune. Every question you get right for the first time adds 5p. Every wrong answer takes 5p off. Get all " + n + " questions right and the jar is full at " + pounds(maxP) + ".</p>" +
+      "<p>So far: " + banked + " question" + (banked === 1 ? "" : "s") + " banked" + (q.pence < 0 ? ", and the wrong answers have put you " + pounds(-q.pence) + " behind" : "") + ".</p></div></section>";
   }
+
 
   /* ---------- Dougie's Wheel of Fortune: spin, land on a unit, answer a question ---------- */
   function shuffle(a) { a = a.slice(); for (var i = a.length - 1; i > 0; i--) { var k = Math.floor(Math.random() * (i + 1)), t = a[i]; a[i] = a[k]; a[k] = t; } return a; }
@@ -426,15 +388,6 @@
     }
   }
 
-  function payHtml(sess) {
-    if (!DR.pay) return "";
-    var P = DR.pay, d = payDay(sess);
-    return '<div class="pay section"><p style="margin:0"><strong>' + money(P.perDay) + "</strong> <span>for the morning, once every slot is ticked and every quiz score is in.</span></p>" +
-      '<p style="margin:0"><strong>' + money(P.perDay * 2) + "</strong> <span>instead, if there are no arguments. Do " + P.days + " days in a row like that and it's " + money(P.perDay * 2 * P.days) + " instead of " + money(P.perDay * P.days) + ". Dad decides on the arguments.</span></p>" +
-      '<p style="margin:0" class="muted">This is day ' + d + " of " + P.days + ".</p></div>";
-  }
-
-
   /* ---------- hub ---------- */
   function pageHub() {
     var live = (DR.registry || []).filter(function (r) { return r.status === "live"; }).map(function (r) { return r.slug; });
@@ -448,7 +401,7 @@
             : '<p><span class="chip">Coming soon</span></p><p>Not yet. Enjoy it while it lasts.</p>') + "</article>";
       }).join("");
       frame("", null,
-        '<div class="hero"><div><h1>Right then, Dougie.</h1><p class="lede">This is your revision lab. The plan, the timer and the pay are all in here, so there\'s nothing to work out. Turn up, do the thing on screen, move on when the timer says so.</p></div><div class="wheel-wrap"><div class="wheel">' + wheelSvg() + '<button type="button" class="wheel-btn" id="wheel" aria-label="SPIN Dougie\'s Wheel of Fortune for a question">SPIN</button></div><p class="wheel-cap"><strong>Dougie\'s Wheel of Fortune</strong><br>Tap to spin. Right first time: +5p. Wrong: 5p off.</p></div></div>' +
+        '<div class="hero"><div><h1>Right then, Dougie.</h1><p class="lede">This is your revision lab. The plan, the timer and the money jar are all in here, so there\'s nothing to work out. Turn up, do the thing on screen, move on when the timer says so.</p></div><div class="wheel-wrap"><div class="wheel">' + wheelSvg() + '<button type="button" class="wheel-btn" id="wheel" aria-label="SPIN Dougie\'s Wheel of Fortune for a question">SPIN</button></div><p class="wheel-cap"><strong>Dougie\'s Wheel of Fortune</strong><br>Tap to spin. Right first time: +5p. Wrong: 5p off.</p></div></div>' +
         '<dialog class="quiz" id="wheel-q" aria-labelledby="wheel-q-h"></dialog>' +
         '<div id="hub-now" aria-live="polite"></div>' +
         jarHtml() +
@@ -463,9 +416,9 @@
               '<a class="btn btn-big" href="' + href + '">Back to it</a></section>';
           } else if (st.when === "before") {
             html = '<section class="mission section" aria-labelledby="hub-h"><p class="kicker">Today\'s session</p><h2 id="hub-h">' + esc(n.s.title) + "</h2><p>" + longDate(n.s.date) + ", " + range(n.s.start, n.s.end) + '</p><p class="countdown">' + clockText(st.secs) + "<small>until it starts</small></p>" +
-              '<a class="btn btn-big" href="' + href + '">Start</a>' + payHtml(n.s) + "</section>";
+              '<a class="btn btn-big" href="' + href + '">Start</a>' + "</section>";
           } else if (st.when === "future") {
-            html = '<section class="mission section" aria-labelledby="hub-h"><p class="kicker">Next session</p><h2 id="hub-h">' + esc(n.s.title) + '</h2><p class="lede">' + longDate(n.s.date) + ", " + range(n.s.start, n.s.end) + '</p><div class="btn-row"><a class="btn" href="' + href + '">See the plan</a></div>' + payHtml(n.s) + "</section>";
+            html = '<section class="mission section" aria-labelledby="hub-h"><p class="kicker">Next session</p><h2 id="hub-h">' + esc(n.s.title) + '</h2><p class="lede">' + longDate(n.s.date) + ", " + range(n.s.start, n.s.end) + '</p><div class="btn-row"><a class="btn" href="' + href + '">See the plan</a></div>' + "</section>";
           } else {
             html = '<section class="mission section" aria-labelledby="hub-h"><p class="kicker">Today\'s session</p><h2 id="hub-h">' + esc(n.s.title) + '</h2><p>Between slots.</p><a class="btn btn-big" href="' + href + '">Open the session</a></section>';
           }
@@ -541,7 +494,7 @@
         : longDate(date) + ", " + range(sess.start, sess.end) + (breaks ? ", " + breaks : "");
       frame(slug, [{ href: BASE + "/", name: "Hub" }, { href: BASE + "/" + slug + "/", name: subj.name }, { name: sess.flexible ? sess.short || sess.title : longDate(date) }],
         '<div class="hero session-head"><div><h1>' + esc(sess.title) + '</h1><p class="times">' + times + '</p></div><div class="portal" aria-hidden="true"></div></div>' +
-        '<div id="mission" class="section" aria-live="polite"></div>' + payHtml(sess) +
+        '<div id="mission" class="section" aria-live="polite"></div>' +
         '<details class="panel howto section" open><summary>How this works</summary><ol>' + howTo.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("") + "</ol></details>" +
         ((sess.notebook || subj.notebook) ? '<div class="section nb-row no-print"><a class="btn btn-big" href="' + esc(sess.notebook || subj.notebook) + '" target="_blank" rel="noopener">Open the ' + esc(sess.short || subj.name) + " Notebook</a></div>" : "") +
         '<section class="section" aria-labelledby="tl-h"><h2 id="tl-h">Timeline</h2>' +
@@ -642,26 +595,19 @@
       return { n: n, c: c, scores: scores, missing: missing, practice: practice };
     }
     function completeHtml() {
-      var r = results(), all = r.n === total, earned = all && r.missing === 0, pay = "", payLine = "";
-      if (DR.pay) {
-        var todo = [];
-        if (!all) todo.push("tick the last " + (total - r.n) + " slot" + (total - r.n === 1 ? "" : "s"));
-        if (r.missing) todo.push("add " + r.missing + " more quiz score" + (r.missing === 1 ? "" : "s"));
-        pay = "<li><strong>" + money(DR.pay.perDay) + "</strong> for this session: " + (earned ? "unlocked." : "to unlock it, " + todo.join(" and ") + ".") + "</li>" +
-          "<li><strong>" + money(DR.pay.perDay * 2) + "</strong> instead if there were no arguments: Dad decides. This was day " + payDay(sess) + " of " + DR.pay.days + ".</li>";
-        payLine = "\nPay: " + money(DR.pay.perDay) + (earned ? " unlocked" : " not unlocked yet") + ", day " + payDay(sess) + " of " + DR.pay.days;
-      }
+      var r = results(), all = r.n === total;
       var text = sess.title + (sess.flexible ? "" : ", " + longDate(date)) + "\nSlots done: " + r.n + " of " + total +
         "\nRed: " + (r.c.red.join(", ") || "none") + "\nAmber: " + (r.c.amber.join(", ") || "none") + "\nGreen: " + (r.c.green.join(", ") || "none") +
-        (r.scores.length ? "\nQuiz scores: " + r.scores.join(", ") : "") + (r.practice.length ? "\nPractice: " + r.practice.join(", ") : "") + payLine;
+        (r.scores.length ? "\nQuiz scores: " + r.scores.join(", ") : "") + (r.practice.length ? "\nPractice: " + r.practice.join(", ") : "");
       return '<section class="mission complete" aria-labelledby="m-h"><p class="kicker">Done</p><h2 id="m-h">Session complete</h2>' +
         "<p>You ticked " + r.n + " of " + total + " slots." + (all ? " All of them. Respect." : "") + "</p>" +
+        '<div class="stuck send-dad"><p class="stuck-h">First, send your results to Dad</p><p>Press the button, then send the message to Dad on WhatsApp or by text.</p>' +
+        '<button type="button" class="btn btn-big" id="send-dad">Send my results to Dad</button><p class="send-note" id="send-dad-note" aria-live="polite"></p></div>' +
         '<ul class="counts"><li class="count count-red">Red ' + r.c.red.length + '</li><li class="count count-amber">Amber ' + r.c.amber.length + '</li><li class="count count-green">Green ' + r.c.green.length + "</li></ul>" +
         (r.c.red.length ? "<h3>Your priority list for next time</h3><ul>" + r.c.red.map(function (k) { return "<li>" + esc(k) + "</li>"; }).join("") + "</ul>"
           : "<p>Nothing rated red. Start with your amber ones next time.</p>") +
-        (pay ? "<h3>Pay</h3><ul>" + pay + "</ul>" : "") +
-        '<h3>Send your results to Dad</h3><p>Copy this and send it to him.</p><div class="summary-box" id="results-text">' + esc(text) + "</div>" +
-        '<button type="button" class="btn" data-copy="results-text" data-label="Copy results">Copy results</button><span class="copied" aria-live="polite"></span></section>';
+        '<h3>What Dad gets</h3><div class="summary-box" id="results-text">' + esc(text) + "</div>" +
+        '<button type="button" class="btn btn-ghost" data-copy="results-text" data-label="Copy results">Copy results</button><span class="copied" aria-live="polite"></span></section>';
     }
     function clock() {
       var st = sessionState(sess);
@@ -701,6 +647,13 @@
     main.addEventListener("click", function (ev) {
       var c = ev.target.closest("[data-copy]"); if (c) DR.components.copy(c);
       if (ev.target.id === "focus-btn") { focus = !focus; store.pref("focus", focus ? "on" : "off"); document.getElementById("mission").setAttribute("data-key", ""); clock(); var fb = document.getElementById("focus-btn"); if (fb) fb.focus(); }
+      if (ev.target.id === "send-dad") {
+        var msg = document.getElementById("results-text").textContent, note = document.getElementById("send-dad-note");
+        if (navigator.share) { navigator.share({ title: "Dougie's results", text: msg }).catch(function () {}); return; }
+        var ok = function () { note.textContent = "Copied. Now open a message to Dad and paste it in."; }, no = function () { note.textContent = "That didn't copy. Use the Copy results button further down."; };
+        try { navigator.clipboard.writeText(msg).then(ok, no); } catch (e) { no(); }
+        return;
+      }
       if (/^clock-/.test(ev.target.id)) {
         var dc = store.read(slug), sc = store.session(dc, date), t0 = Date.now(), cs = sessionState(sess);
         if (ev.target.id === "clock-start") sc.clock = { el: 0, since: t0, first: t0 };

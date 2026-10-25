@@ -25,6 +25,7 @@ DR.subjects["computer-science"] = {
     "The order of work in each report slot is: (1) the first quiz, (2) the key terms flashcards, (3) the exam mistakes section. Then, (4) if there's time, the final quiz and the second flashcard set.",
     "Paper 2 has practice slots: trace tables, sorts, searches, truth tables and Python. Do each one on paper first, because in the exam you write it all by hand. Then check it on the page.",
     "When a slot's time is up, move on, even if you haven't finished. Getting through everything is better than finishing every part today.",
+    "When the session's over, the box at the top of the page asks you to send your results to Dad. Do it straight away: press Send my results to Dad and send him the message.",
     "You can use your revision guide, class notes or knowledge organiser whenever you want, but only as a last resort, when you really can't remember something. Anything you can't remember, write it down as a note.",
     "You can ask Dad for help wherever and whenever you want, as long as he's not in a meeting."
   ],
