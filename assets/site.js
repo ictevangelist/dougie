@@ -290,7 +290,7 @@
   }
   function pence(p) { var w = Math.floor(p); return (w + (p - w >= 0.5 ? "\u00bd" : "")) + "p"; }
   /* A right answer starts at 5p and goes up 2½p for every 50 questions banked. A wrong answer is always 5p off. */
-  var STEP = 50;
+  var STEP = 50, REPEAT = 0.25;
   function prize(banked) { return 5 + 2.5 * Math.floor(banked / STEP); }
   function quizStore() { var q = store.read("wheel"); q.pence = q.pence || 0; q.banked = q.banked || {}; return q; }
   /* The money jar fills only from Dougie's Wheel of Fortune: 5p the first time each question is right, 5p off for each wrong answer.
@@ -383,10 +383,14 @@
     var multi = POCKETS.some(function (pk) { return pk.slug && !pk.unit; });
     function ask(pocket) {
       var pool = bank.filter(function (b) { return (!pocket.slug || (b.slug === pocket.slug && (!pocket.unit || b.q[0] === pocket.unit))) && b.q[1] !== lastQ; });
-      var pick = pool[Math.floor(Math.random() * pool.length)], q = pick.q, u = units[pick.slug][q[0]], reg = registryItem(pick.slug);
+      /* Mostly questions he hasn't banked yet; about one spin in four is a repeat, for practice */
+      var bk = quizStore().banked, fresh = pool.filter(function (x) { return !bk[x.q[1]]; }), done = pool.filter(function (x) { return bk[x.q[1]]; });
+      if (!fresh.length) fresh = bank.filter(function (x) { return !bk[x.q[1]] && x.q[1] !== lastQ; }); /* this pocket is all banked: take a fresh one from anywhere */
+      var from = fresh.length && (!done.length || Math.random() >= REPEAT) ? fresh : done.length ? done : pool;
+      var pick = from[Math.floor(Math.random() * from.length)], q = pick.q, u = units[pick.slug][q[0]], reg = registryItem(pick.slug), again = !!bk[q[1]];
       lastQ = q[1];
       var opts = shuffle(q.slice(2, 6));
-      dlg.innerHTML = '<p class="kicker">' + (!pocket.slug ? "Mix: anything. This one is " : "") + (multi || !pocket.slug ? esc(reg.name) + ", " : "") + "Unit " + esc(q[0]) + (u ? ": " + esc(u.title) : "") + '</p><h2 id="wheel-q-h">' + esc(q[1]) + "</h2>" +
+      dlg.innerHTML = '<p class="kicker">' + (!pocket.slug ? "Mix: anything. This one is " : "") + (multi || !pocket.slug ? esc(reg.name) + ", " : "") + "Unit " + esc(q[0]) + (u ? ": " + esc(u.title) : "") + '</p><h2 id="wheel-q-h">' + esc(q[1]) + "</h2>" + (again ? '<p class="quiz-again">You\'ve banked this one before, so it\'s practice: a right answer pays nothing this time, and a wrong one is still 5p off.</p>' : "") +
         '<div class="quiz-opts">' + opts.map(function (o) { return '<button type="button" class="quiz-opt" data-right="' + (o === q[2] ? "1" : "0") + '">' + esc(o) + "</button>"; }).join("") + "</div>" +
         '<p class="quiz-result" aria-live="polite"></p><div class="btn-row"><button type="button" class="btn" data-act="again" hidden>Spin again</button><button type="button" class="btn btn-ghost" data-act="close">Close</button></div>';
       dlg.showModal();
