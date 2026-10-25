@@ -1,6 +1,7 @@
 /* Dougie's Revision: Biology.
    To add a session, add one object to "sessions" below. Its page is /biology/sessions/<date>/ and works straight away.
-   Slot types: setup, report (needs "report": a report code), check (needs "unit": a unit code), break. */
+   Slot types: setup, report (needs "report": a report code), check (needs "unit": a unit code), break.
+   Give a report a "link" (its own web address) and its buttons open it directly instead of the notebook. */
 window.DR = window.DR || {};
 DR.subjects = DR.subjects || {};
 DR.subjects.biology = {
@@ -11,6 +12,11 @@ DR.subjects.biology = {
   notebook: "https://notebook.google.com/notebook/627c4f27-96ce-4b04-9f28-992ddce72b14",
   checkPrompt: "Based on the quizzes and flashcards I have just done for Unit {unit}, what are my three weakest areas, and what one thing should I do to fix each one? Keep it short.",
   checkNote: "Paste this into the notebook chat, then press Save to note on the answer.",
+  steps: {
+    report: ["Do the first quiz, before you read anything.", "Go through the key terms flashcards.", "Read the exam mistakes section.", "Time left? Do the final quiz, then the second flashcard set."],
+    check: ["Copy the prompt below.", "Paste it into the notebook chat.", "Press Save to note on the answer."],
+    setup: ["Open the notebook.", "Check it loads.", "Find report 4.1a in the Studio panel."]
+  },
   howTo: [
     "Every report lives in one Gemini Notebook. Open the notebook, then open each report from the Studio panel by its code, for example 4.1a.",
     "Inside each report, do the first quiz BEFORE reading anything. Getting things wrong at this stage is useful, because it shows what to focus on.",
@@ -66,6 +72,10 @@ DR.subjects.biology = {
       start: "09:00",
       end: "12:35",
       breaks: [{ start: "11:15", end: "11:35" }],
+      rewards: [
+        { amount: "\u00a35", label: "for doing the morning", unlock: "all" },
+        { amount: "\u00a310", label: "more for doing it without any arguments", unlock: "dad" }
+      ],
       slots: [
         { start: "09:00", end: "09:05", type: "setup", title: "Get set up", note: "Open the notebook, check it loads and find report 4.1a." },
         { start: "09:05", end: "09:17", type: "report", report: "4.1a" },

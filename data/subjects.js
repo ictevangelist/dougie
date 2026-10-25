@@ -15,6 +15,7 @@ DR.registry = [
   {
     slug: "english-language",
     name: "English Language",
+    short: "English",
     accent: "#2980B9",
     tint: "#E1EDF5",
     status: "soon",
@@ -23,6 +24,7 @@ DR.registry = [
   {
     slug: "computer-science",
     name: "Computer Science",
+    short: "Comp Sci",
     accent: "#D35400",
     tint: "#F9E7DB",
     status: "soon",
