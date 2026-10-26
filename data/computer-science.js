@@ -1,7 +1,7 @@
 /* Dougie's Revision: Computer Science (OCR J277).
    Two flexible sessions: slots have minutes, not clock times, and the timer starts when Dougie presses Start.
    Slot types: setup, report, check, practice (needs "activity": a key in "activities"), break.
-   notebook links: set "notebook" on each session (one notebook per paper) and "link" on each report once they exist. */
+   Each paper has its own notebook ("notebook" on the session); each report has its direct "link". */
 window.DR = window.DR || {};
 DR.subjects = DR.subjects || {};
 DR.subjects["computer-science"] = {
@@ -21,6 +21,7 @@ DR.subjects["computer-science"] = {
   stuck: { title: "Can't remember something?", lines: ["Try hard to remember it first.", "Only then check your revision guide, class notes or knowledge organiser. They're a last resort.", "Write down anything you couldn't remember as a note."], dad: "Need a hand? Ask Dad, wherever and whenever you want. Just check he's not in a meeting first." },
   howTo: [
     "There are two sessions, one for each paper. They're too big to do in one go, so do them on different days. Press Start when you're ready and the timer runs from then. You can pause it.",
+    "Open the reports while you're signed in to Google with your own Gmail account, not your school one. The notebooks are shared with your Gmail, so they won't open for the school account.",
     "Each report lives in the notebook for that paper. Inside each report, do the first quiz BEFORE reading anything. Getting things wrong at this stage is useful, because it shows what to focus on.",
     "The order of work in each report slot is: (1) the first quiz, (2) the key terms flashcards, (3) the exam mistakes section. Then, (4) if there's time, the final quiz and the second flashcard set.",
     "Paper 2 has practice slots: trace tables, sorts, searches, truth tables and Python. Do each one on paper first, because in the exam you write it all by hand. Then check it on the page.",
@@ -32,58 +33,58 @@ DR.subjects["computer-science"] = {
   units: [
     { code: "1.1", title: "Systems architecture", colour: "#3498DB", dark: "#3498DB", tint: "#E3F1FA",
       reports: [
-        { code: "1.1a", title: "The CPU and the fetch-execute cycle", focus: "What the CPU does, the fetch-execute cycle, the ALU, control unit, cache and registers, and Von Neumann architecture." },
-        { code: "1.1b", title: "CPU performance and embedded systems", focus: "How clock speed, cache size and the number of cores affect performance, and what embedded systems are." }
+        { code: "1.1a", link: "https://notebooklm.link.google/owAj8kC22jfO", title: "The CPU and the fetch-execute cycle", focus: "What the CPU does, the fetch-execute cycle, the ALU, control unit, cache and registers, and Von Neumann architecture." },
+        { code: "1.1b", link: "https://notebooklm.link.google/xAXwEficF2SJ", title: "CPU performance and embedded systems", focus: "How clock speed, cache size and the number of cores affect performance, and what embedded systems are." }
       ] },
     { code: "1.2", title: "Memory and storage", colour: "#9B59B6", dark: "#9B59B6", tint: "#F1E8F5",
       reports: [
-        { code: "1.2a", title: "Primary and secondary storage", focus: "RAM, ROM, virtual memory, and choosing optical, magnetic or solid state storage." },
-        { code: "1.2b", title: "Units and number systems", focus: "Units from bits to petabytes, file size calculations, binary, denary and hex, binary addition, overflow and shifts." },
-        { code: "1.2c", title: "Characters, images, sound and compression", focus: "Character sets, how images and sound are stored, metadata, and lossy and lossless compression." }
+        { code: "1.2a", link: "https://notebooklm.link.google/Pq1S3C0hf54D", title: "Primary and secondary storage", focus: "RAM, ROM, virtual memory, and choosing optical, magnetic or solid state storage." },
+        { code: "1.2b", link: "https://notebooklm.link.google/mA5A3Kl8Mfbk", title: "Units and number systems", focus: "Units from bits to petabytes, file size calculations, binary, denary and hex, binary addition, overflow and shifts." },
+        { code: "1.2c", link: "https://notebooklm.link.google/ZwoWUixzze30", title: "Characters, images, sound and compression", focus: "Character sets, how images and sound are stored, metadata, and lossy and lossless compression." }
       ] },
     { code: "1.3", title: "Computer networks, connections and protocols", colour: "#1ABC9C", dark: "#1ABC9C", tint: "#DDF5F0",
       reports: [
-        { code: "1.3a", title: "Networks, topologies and the internet", focus: "LANs and WANs, client-server and peer-to-peer, network hardware, the internet, DNS, hosting, the cloud, star and mesh." },
-        { code: "1.3b", title: "Wired and wireless networks, protocols and layers", focus: "Ethernet, Wi-Fi and Bluetooth, encryption, IP and MAC addresses, standards, protocols and layers." }
+        { code: "1.3a", link: "https://notebooklm.link.google/J5zkOHL7qRi6", title: "Networks, topologies and the internet", focus: "LANs and WANs, client-server and peer-to-peer, network hardware, the internet, DNS, hosting, the cloud, star and mesh." },
+        { code: "1.3b", link: "https://notebooklm.link.google/kaIhBtJuzG2B", title: "Wired and wireless networks, protocols and layers", focus: "Ethernet, Wi-Fi and Bluetooth, encryption, IP and MAC addresses, standards, protocols and layers." }
       ] },
     { code: "1.4", title: "Network security", colour: "#E74C3C", dark: "#E74C3C", tint: "#FCE6E4",
       reports: [
-        { code: "1.4", title: "Network security", focus: "Threats such as malware, phishing, brute force, denial of service, interception and SQL injection, and how to prevent them." }
+        { code: "1.4", link: "https://notebooklm.link.google/gHnsdpMUo5c9", title: "Network security", focus: "Threats such as malware, phishing, brute force, denial of service, interception and SQL injection, and how to prevent them." }
       ] },
     { code: "1.5", title: "Systems software", colour: "#F39C12", dark: "#F39C12", tint: "#FDF0DC",
       reports: [
-        { code: "1.5", title: "Systems software", focus: "What an operating system does, and utility software: encryption, defragmentation and compression." }
+        { code: "1.5", link: "https://notebooklm.link.google/K0oLptvUUoL3", title: "Systems software", focus: "What an operating system does, and utility software: encryption, defragmentation and compression." }
       ] },
     { code: "1.6", title: "Ethical, legal, cultural and environmental impacts", colour: "#2ECC71", dark: "#2ECC71", tint: "#E2F8EB",
       reports: [
-        { code: "1.6", title: "Ethical, legal, cultural and environmental impacts", focus: "The impacts of technology, the three laws you need, and open source and proprietary software." }
+        { code: "1.6", link: "https://notebooklm.link.google/YtblK3xSVJk3", title: "Ethical, legal, cultural and environmental impacts", focus: "The impacts of technology, the three laws you need, and open source and proprietary software." }
       ] },
     { code: "2.1", title: "Algorithms", colour: "#2980B9", dark: "#2980B9", tint: "#E1EDF5",
       reports: [
-        { code: "2.1a", title: "Computational thinking and designing algorithms", focus: "Abstraction, decomposition, algorithmic thinking, structure diagrams, pseudocode, flowcharts and trace tables." },
-        { code: "2.1b", title: "Searching and sorting algorithms", focus: "Linear and binary search, and bubble, merge and insertion sort." }
+        { code: "2.1a", link: "https://notebooklm.link.google/569EG2GeCJap", title: "Computational thinking and designing algorithms", focus: "Abstraction, decomposition, algorithmic thinking, structure diagrams, pseudocode, flowcharts and trace tables." },
+        { code: "2.1b", link: "https://notebooklm.link.google/1CXRiPNSXg96", title: "Searching and sorting algorithms", focus: "Linear and binary search, and bubble, merge and insertion sort." }
       ] },
     { code: "2.2", title: "Programming fundamentals", colour: "#8E44AD", dark: "#8E44AD", tint: "#EEE3F3",
       reports: [
-        { code: "2.2a", title: "Programming fundamentals", focus: "Variables, constants, operators, inputs and outputs, sequence, selection and iteration." },
-        { code: "2.2b", title: "Data types and additional programming techniques", focus: "Data types and casting, strings, files, records, SQL, arrays, functions and procedures, random numbers." }
+        { code: "2.2a", link: "https://notebooklm.link.google/RtTKUMJ4Bzii", title: "Programming fundamentals", focus: "Variables, constants, operators, inputs and outputs, sequence, selection and iteration." },
+        { code: "2.2b", link: "https://notebooklm.link.google/7AoiT9ARRiUZ", title: "Data types and additional programming techniques", focus: "Data types and casting, strings, files, records, SQL, arrays, functions and procedures, random numbers." }
       ] },
     { code: "2.3", title: "Producing robust programs", colour: "#D35400", dark: "#D35400", tint: "#F9E5D9",
       reports: [
-        { code: "2.3", title: "Producing robust programs", focus: "Defensive design, validation, authentication, maintainable code, testing and test data." }
+        { code: "2.3", link: "https://notebooklm.link.google/m5uzxbXtuCia", title: "Producing robust programs", focus: "Defensive design, validation, authentication, maintainable code, testing and test data." }
       ] },
     { code: "2.4", title: "Boolean logic", colour: "#16A085", dark: "#16A085", tint: "#DEF2EE",
       reports: [
-        { code: "2.4", title: "Boolean logic", focus: "AND, OR and NOT gates, truth tables and combining them." }
+        { code: "2.4", link: "https://notebooklm.link.google/W6sIAXKIjFHY", title: "Boolean logic", focus: "AND, OR and NOT gates, truth tables and combining them." }
       ] },
     { code: "2.5", title: "Programming languages and IDEs", colour: "#E67E22", dark: "#E67E22", tint: "#FCEDE0",
       reports: [
-        { code: "2.5", title: "Programming languages and IDEs", focus: "High and low level languages, compilers, interpreters and what an IDE gives you." }
+        { code: "2.5", link: "https://notebooklm.link.google/npzLCLPZPHJJ", title: "Programming languages and IDEs", focus: "High and low level languages, compilers, interpreters and what an IDE gives you." }
       ] },
     { code: "Mixed", title: "Mixed retrieval", colour: "#95A5A6", dark: "#95A5A6", tint: "#EEF0F0",
       reports: [
-        { code: "Mixed 1", title: "Paper 1 mixed retrieval", focus: "Questions from across Paper 1, mixed up." },
-        { code: "Mixed 2", title: "Paper 2 mixed retrieval", focus: "Questions from across Paper 2, mixed up." }
+        { code: "Mixed 1", link: "https://notebooklm.link.google/FOFEQOckt9H0", title: "Paper 1 mixed retrieval", focus: "Questions from across Paper 1, mixed up." },
+        { code: "Mixed 2", link: "https://notebooklm.link.google/8j6bEES7Zwxj", title: "Paper 2 mixed retrieval", focus: "Questions from across Paper 2, mixed up." }
       ] }
   ],
   activities: {
@@ -347,7 +348,7 @@ DR.subjects["computer-science"] = {
       "flexible": true,
       "title": "Paper 1: Computer systems",
       "short": "Paper 1",
-      "notebook": "",
+      "notebook": "https://notebook.google.com/notebook/5c13c207-183f-45f7-8d85-4fce2cad7c43",
       "slots": [
         {
           "type": "setup",
@@ -441,7 +442,7 @@ DR.subjects["computer-science"] = {
       "flexible": true,
       "title": "Paper 2: Algorithms and programming",
       "short": "Paper 2",
-      "notebook": "",
+      "notebook": "https://notebook.google.com/notebook/eb8d20ec-160f-4f8a-8c55-f23fdd669893",
       "slots": [
         {
           "type": "setup",
