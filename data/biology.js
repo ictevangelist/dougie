@@ -154,6 +154,8 @@ DR.subjects.biology = {
     ["4.4", "Why does your heart rate go up during exercise?", "To get more oxygen and glucose to the muscles, and take more carbon dioxide away", "To cool the body down", "To breathe the lactic acid out through the lungs", "To make more red blood cells"],
     ["4.4", "What is anaerobic respiration in yeast used to make?", "Bread and alcoholic drinks", "Yoghurt", "Cheese", "Vinegar"]
   ],
+  /* Practice papers: typed answers, handed in and sent to Dad for marking */
+  activities: { "paper-1": {"kind": "paper", "title": "Practice paper 1", "intro": "30 minutes, 30 marks. Answer every question in the boxes. You can use a calculator. The marks in brackets tell you how much to write: about one mark a minute. Spellcheck is off, like in the exam. When you've finished, press Hand it in, then send your answers to Dad.", "items": [{"n": "1.1", "group": "Question 1: Cells", "q": "Which structure is found in a plant cell but not in an animal cell? Choose one.", "marks": 1, "type": "mcq", "options": ["Cell membrane", "Chloroplast", "Mitochondrion", "Ribosome"]}, {"n": "1.2", "q": "A student looks at a cheek cell through a light microscope. The image of the cell is 6 mm wide. The real cell is 0.06 mm wide. Calculate the magnification. Show your working.", "marks": 2, "type": "text", "lines": 3}, {"n": "1.3", "q": "Before a cell divides by mitosis, it goes through a stage of growth. Describe two things that happen to the cell during this stage.", "marks": 2, "type": "text", "lines": 3}, {"n": "2.1", "group": "Question 2: Osmosis practical", "context": "A student put cylinders of potato into sugar solutions of different concentrations. She weighed each cylinder before and after leaving it for 30 minutes.", "table": [["Concentration of sugar solution in mol/dm³", "Percentage change in mass"], ["0.0", "+12.0"], ["0.2", "+4.5"], ["0.4", "−2.0"], ["0.6", "−8.5"], ["0.8", "−12.5"]], "q": "One cylinder had a mass of 2.50 g at the start and 2.80 g at the end. Calculate the percentage change in mass. Show your working.", "marks": 2, "type": "text", "lines": 3}, {"n": "2.2", "q": "Between which two concentrations in the table would a cylinder show no change in mass?", "marks": 1, "type": "text", "lines": 1}, {"n": "2.3", "q": "Explain why the cylinder in the 0.8 mol/dm³ solution lost mass.", "marks": 3, "type": "text", "lines": 4}, {"n": "2.4", "q": "Why did the student calculate the percentage change in mass, rather than just the change in mass?", "marks": 1, "type": "text", "lines": 2}, {"n": "3.1", "group": "Question 3: Enzymes and food tests", "q": "Name the enzyme that breaks down lipids, and name the products.", "marks": 2, "type": "text", "lines": 2}, {"n": "3.2", "q": "Explain why an enzyme stops working at a high temperature.", "marks": 2, "type": "text", "lines": 3}, {"n": "3.3", "q": "Name the reagent used to test for protein, and give the colour it turns if protein is present.", "marks": 2, "type": "text", "lines": 2}, {"n": "4.1", "group": "Question 4: Coronary heart disease", "q": "Explain how a stent helps a person with coronary heart disease.", "marks": 2, "type": "text", "lines": 3}, {"n": "5.1", "group": "Question 5: Infection and response", "q": "Measles is caused by a virus. Explain why a doctor would not give antibiotics to treat measles.", "marks": 1, "type": "text", "lines": 2}, {"n": "5.2", "q": "Explain how a vaccination can stop a person becoming ill with measles.", "marks": 3, "type": "text", "lines": 4}, {"n": "6.1", "group": "Question 6: Photosynthesis practical", "q": "A student wants to find out how light intensity affects the rate of photosynthesis in pondweed. Describe a method the student could use. Include how they would make it a fair test.", "marks": 6, "type": "text", "lines": 12}]} },
   units: [
     {
       code: "4.1", title: "Cell Biology", colour: "#3498DB", dark: "#2980B9", tint: "#E3F1FA",
@@ -196,6 +198,17 @@ DR.subjects.biology = {
     }
   ],
   sessions: [
+    {
+      id: "practice-paper-1",
+      flexible: true,
+      paper: true,
+      blurb: "30 minutes, 30 marks. Topics 4.1 to 4.4, in the style of Paper 1 (Higher).",
+      title: "Practice paper 1: Biology Paper 1 topics",
+      short: "Practice paper 1",
+      slots: [
+        { type: "practice", mins: 30, activity: "paper-1", title: "Practice paper 1: 30 minutes, 30 marks" }
+      ]
+    },
     {
       date: "2026-10-26",
       title: "Biology Revision Session",

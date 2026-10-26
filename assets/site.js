@@ -157,7 +157,7 @@
 
   /* ---------- shared header, breadcrumbs and footer ---------- */
   function header(current) {
-    var links = [{ href: BASE + "/", name: "Hub", slug: "" }].concat((DR.registry || []).map(function (r) { return { href: BASE + "/" + r.slug + "/", name: r.name, short: r.short, slug: r.slug }; }));
+    var links = [{ href: BASE + "/", name: "Hub", slug: "" }].concat((DR.registry || []).map(function (r) { return { href: BASE + "/" + r.slug + "/", name: r.name, short: r.short, slug: r.slug }; }), [{ href: BASE + "/past-papers/", name: "Past paper practice", short: "Papers", slug: "past-papers" }]);
     return '<a class="skip" href="#main">Skip to content</a><header class="site-header"><div class="wrap">' +
       '<a class="brand" href="' + BASE + '/"><span class="brand-dot" aria-hidden="true"></span>Dougie\'s Revision</a><nav aria-label="Main"><ul class="nav">' +
       links.map(function (l) {
@@ -488,7 +488,7 @@
               rating("rate-" + id, s.rating, "Confidence") + '<p style="margin-top:12px">' + scoreBox(id, s.score) + "</p></li>";
           }).join("") + "</ul></section>";
       }).join("");
-      var sessions = sessionsNewestFirst(subj).map(function (s) {
+      var sessions = sessionsNewestFirst(subj).filter(function (s) { return !s.paper; }).map(function (s) {
         return '<li class="card" style="--accent-dark:' + reg.accent + '"><a href="' + BASE + "/" + slug + "/sessions/" + skey(s) + '/"><strong>' + esc(s.title) + "</strong><span>" + (s.flexible ? "Do it when you're ready. About " + hrs(s.totalMins) + "." : longDate(s.date) + ", " + range(s.start, s.end)) + "</span></a></li>";
       }).join("");
       frame(slug, [{ href: BASE + "/", name: "Hub" }, { name: subj.name }],
@@ -532,7 +532,7 @@
       var breakMins = sess.flexible ? sess.slots.filter(function (x) { return x.type === "break"; }).reduce(function (n, x) { return n + x.mins; }, 0) : 0;
       var times = sess.flexible ? "About " + hrs(sess.totalMins) + (breakMins ? ", including a " + breakMins + " minute break" : "") + ". Start it whenever you're ready."
         : longDate(date) + ", " + range(sess.start, sess.end) + (breaks ? ", " + breaks : "");
-      frame(slug, [{ href: BASE + "/", name: "Hub" }, { href: BASE + "/" + slug + "/", name: subj.name }, { name: sess.flexible ? sess.short || sess.title : longDate(date) }],
+      frame(sess.paper ? "past-papers" : slug, sess.paper ? [{ href: BASE + "/", name: "Hub" }, { href: BASE + "/past-papers/", name: "Past paper practice" }, { name: subj.name + ": " + (sess.short || sess.title) }] : [{ href: BASE + "/", name: "Hub" }, { href: BASE + "/" + slug + "/", name: subj.name }, { name: sess.flexible ? sess.short || sess.title : longDate(date) }],
         '<div class="hero session-head"><div><h1>' + esc(sess.title) + '</h1><p class="times">' + times + '</p></div><div class="portal" aria-hidden="true"></div></div>' +
         '<div id="mission" class="section" aria-live="polite"></div>' +
         '<details class="panel howto section" open><summary>How this works</summary><ol>' + howTo.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("") + "</ol></details>" +
@@ -643,7 +643,7 @@
         '<p class="countdown">' + clockText(st.left) + "<small>" + (st.paused ? "left, paused" : isBreak ? "until you're back on" : "left on this one") + "</small></p>" + controls +
         (sl.note ? '<p class="note"><strong>' + esc(sl.note) + "</strong></p>" : "") +
         '<ol class="steps">' + steps(sl).map(function (s) { return "<li>" + esc(s) + "</li>"; }).join("") + "</ol>" + (sl.type === "report" ? partsStatus(st.i) : "") +
-        ((sl.type === "report" || sl.type === "practice") && subj.stuck ? '<div class="stuck"><p class="stuck-h">' + esc(subj.stuck.title) + "</p><ol>" + subj.stuck.lines.map(function (s) { return "<li>" + esc(s) + "</li>"; }).join("") + "</ol>" + (subj.stuck.dad ? '<p class="stuck-dad">' + esc(subj.stuck.dad) + "</p>" : "") + "</div>" : "") +
+        ((sl.type === "report" || (sl.type === "practice" && ((subj.activities || {})[sl.activity] || {}).kind !== "paper")) && subj.stuck ? '<div class="stuck"><p class="stuck-h">' + esc(subj.stuck.title) + "</p><ol>" + subj.stuck.lines.map(function (s) { return "<li>" + esc(s) + "</li>"; }).join("") + "</ol>" + (subj.stuck.dad ? '<p class="stuck-dad">' + esc(subj.stuck.dad) + "</p>" : "") + "</div>" : "") +
         '<div class="btn-row">' + (isBreak ? "" : (sl.type === "practice" ? '<a class="btn" href="#slot-' + st.i + '">Go to the practice</a>' : missionLink(sl) + '<a class="btn btn-ghost" href="#slot-' + st.i + '">Go to this slot</a>')) +
         '<button type="button" class="btn btn-ghost" id="focus-btn" aria-pressed="' + (focus ? "true" : "false") + '">' + (focus ? "Show everything" : "Focus mode") + "</button></div>" + nextLine + "</section>";
     }
@@ -657,7 +657,7 @@
       });
       var missing = sess.slots.filter(function (s) { if (s.type !== "report") return false; var x = ss.reports[s.report]; return !x || x.score === undefined || x.score === ""; }).length;
       var practice = [];
-      sess.slots.forEach(function (s, i) { if (s.type !== "practice") return; var p = (ss.practice || {})[i] || {}; var ak = ((subj.activities || {})[s.activity] || {}).kind; practice.push(slotTitle(subj, s, idx).replace(/^Practice: /, "") + ": " + (ak === "write" ? (p.ok ? "done, " + words(p.text) + " words" : p.text ? "started, " + words(p.text) + " words" : "not done yet") : p.ok ? "got it right" : p.shown ? "answers shown" : "not done yet")); });
+      sess.slots.forEach(function (s, i) { if (s.type !== "practice") return; var p = (ss.practice || {})[i] || {}; var ak = ((subj.activities || {})[s.activity] || {}).kind; practice.push(slotTitle(subj, s, idx).replace(/^Practice: /, "") + ": " + (ak === "paper" ? (p.submitted ? "handed in" : "not handed in yet") : ak === "write" ? (p.ok ? "done, " + words(p.text) + " words" : p.text ? "started, " + words(p.text) + " words" : "not done yet") : p.ok ? "got it right" : p.shown ? "answers shown" : "not done yet")); });
       var reportLines = [];
       sess.slots.forEach(function (s, i) { if (s.type === "report") reportLines.push(slotTitle(subj, s, idx) + ": " + partsLine(subj, ((ss.parts || {})[i]) || {})); });
       return { n: n, c: c, scores: scores, missing: missing, practice: practice, reportLines: reportLines };
@@ -832,6 +832,7 @@
     var head = '<div class="act" data-act="' + i + '">' + (a.intro ? "<p>" + esc(a.intro) + "</p>" : "") + (a.code ? '<pre class="code">' + esc(a.code) + "</pre>" : "") +
       (a.kind === "sort" || a.kind === "binary" ? '<p class="act-list">The list: <strong>' + esc(a.list.join(", ")) + "</strong>" + (a.kind === "binary" ? ". Looking for <strong>" + esc(a.target) + "</strong>" : "") + "</p>" : "");
     var foot = '<div class="btn-row"><button type="button" class="btn" data-check="' + i + '">' + (a.kind === "python" ? "Run and check" : "Check") + '</button><button type="button" class="linkbtn" data-show="' + i + '">' + (a.kind === "python" && (saved.ok || saved.shown) ? "Hide the answers" : "Show the answers") + '</button><button type="button" class="linkbtn" data-clear="' + i + '">' + (a.kind === "python" ? "Start the code again" : "Clear and try again") + '</button></div><p class="act-result" aria-live="polite">' + (saved.ok ? "Done: you got it right." : "") + "</p>";
+    if (a.kind === "paper") return head + paperHtml(a, i, saved) + paperFoot(i, saved) + "</div>";
     if (a.kind === "select" || a.kind === "choice" || a.kind === "write") return head + textActHtml(a, i, saved) + (a.kind === "write" ? writeFoot(i, saved) : foot) + "</div>";
     if (a.kind === "python") {
       return head + "<p>" + esc(a.task) + '</p><label class="sr-only" for="code-' + i + '">Your Python code</label><textarea class="code-box" id="code-' + i + '" spellcheck="false" autocapitalize="off" autocomplete="off" rows="10">' + esc(saved.code != null ? saved.code : a.starter || "") + "</textarea>" +
@@ -874,6 +875,27 @@
       '<label class="sr-only" for="w-' + i + '">Your writing</label><textarea class="write-box" id="w-' + i + '" rows="14" spellcheck="true">' + esc(saved.text || "") + "</textarea>" +
       '<p class="wcount" id="wc-' + i + '" aria-live="polite">' + words(saved.text) + " words. Aim for at least " + a.minWords + ".</p>" +
       '<fieldset class="pick"><legend>Before you finish, check you have:</legend>' + a.checklist.map(function (c, k) { return '<label class="pick-row"><input type="checkbox" data-tick="' + k + '"' + (tick[k] ? " checked" : "") + "> <span>" + esc(c) + "</span></label>"; }).join("") + "</fieldset>";
+  }
+  /* Practice papers: typed answers that lock when handed in, then go to Dad for marking */
+  function paperHtml(a, i, saved) {
+    var v = saved.v || {}, off = saved.submitted ? " disabled" : "", out = "";
+    a.items.forEach(function (it) {
+      if (it.group) out += '<h4 class="pp-group">' + esc(it.group) + "</h4>";
+      if (it.context) out += "<p>" + esc(it.context) + "</p>";
+      if (it.table) out += '<div class="table-wrap"><table class="act-table"><thead><tr>' + it.table[0].map(function (h) { return '<th scope="col">' + esc(h) + "</th>"; }).join("") + "</tr></thead><tbody>" + it.table.slice(1).map(function (r) { return "<tr>" + r.map(function (c) { return "<td>" + esc(c) + "</td>"; }).join("") + "</tr>"; }).join("") + "</tbody></table></div>";
+      var id = "pp-" + i + "-" + it.n.replace(/\W/g, ""), head = '<p class="pp-q"><strong>' + esc(it.n) + "</strong> " + esc(it.q) + ' <span class="pp-marks">[' + it.marks + " mark" + (it.marks === 1 ? "" : "s") + "]</span></p>";
+      if (it.type === "mcq") out += '<fieldset class="pick pp-item"><legend>' + head + "</legend>" + it.options.map(function (o) { return '<label class="pick-row"><input type="radio" name="' + id + '" data-pa="' + esc(it.n) + '" value="' + esc(o) + '"' + (v[it.n] === o ? " checked" : "") + off + "> <span>" + esc(o) + "</span></label>"; }).join("") + "</fieldset>";
+      else out += '<div class="pp-item">' + head.replace('<p class="pp-q">', '<p class="pp-q" id="' + id + '-q">') + '<textarea class="paper-box" rows="' + (it.lines || 3) + '" spellcheck="false" autocapitalize="sentences" data-pa="' + esc(it.n) + '" aria-labelledby="' + id + '-q"' + off + ">" + esc(v[it.n] || "") + "</textarea></div>";
+    });
+    return out;
+  }
+  function paperFoot(i, saved) {
+    if (!saved.submitted) return '<div class="btn-row"><button type="button" class="btn btn-big" data-check="' + i + '">Hand it in</button></div><p class="act-result" aria-live="polite">Once you hand it in, you can\'t change your answers.</p>';
+    return '<div class="stuck send-dad"><p class="stuck-h">Handed in. Now send your answers to Dad</p><p>He\'ll get them marked and tell you how you did.</p><button type="button" class="btn btn-big" data-send-paper="' + i + '">Send my answers to Dad</button><p class="send-note" aria-live="polite"></p></div>';
+  }
+  function paperText(a, saved) {
+    var v = saved.v || {};
+    return a.title + " (Biology, 30 marks)" + (saved.at ? "\nHanded in: " + new Date(saved.at).toLocaleString("en-GB") : "") + "\n\n" + a.items.map(function (it) { return it.n + " [" + it.marks + "]: " + (String(v[it.n] || "").trim() || "(left blank)"); }).join("\n\n");
   }
   function writeFoot(i, saved) { return '<div class="btn-row"><button type="button" class="btn" data-check="' + i + '">I\'ve finished</button></div><p class="act-result" aria-live="polite">' + (saved.ok ? "Done: " + words(saved.text) + " words." : "") + "</p>"; }
 
@@ -931,11 +953,13 @@
       var i = +box.getAttribute("data-act");
       if (ev.target.classList.contains("cell")) { ev.target.classList.remove("ok", "bad"); save(i, { v: vals(box) }); }
       if (ev.target.classList.contains("code-box")) save(i, { code: ev.target.value });
+      if (ev.target.classList.contains("paper-box")) { var cv = ((store.session(store.read(slug), date).practice || {})[i] || {}).v || {}; cv = Object.assign({}, cv); cv[ev.target.getAttribute("data-pa")] = ev.target.value; save(i, { v: cv }); }
       if (ev.target.classList.contains("write-box")) { save(i, { text: ev.target.value }); var wc = box.querySelector(".wcount"), aw = subj.activities[sess.slots[i].activity]; wc.textContent = words(ev.target.value) + " words. Aim for at least " + aw.minWords + "."; }
     });
     main.addEventListener("change", function (ev) {
       var box = ev.target.closest(".act"); if (!box) return;
       var i = +box.getAttribute("data-act"), d = store.read(slug), cur = ((store.session(d, date).practice || {})[i]) || {};
+      if (ev.target.type === "radio" && ev.target.hasAttribute("data-pa")) { var pv = Object.assign({}, cur.v || {}); pv[ev.target.getAttribute("data-pa")] = ev.target.value; save(i, { v: pv }); return; }
       if (ev.target.hasAttribute("data-pick")) { var v = Object.assign({}, cur.v || {}); if (ev.target.checked) v[ev.target.getAttribute("data-pick")] = true; else delete v[ev.target.getAttribute("data-pick")]; save(i, { v: v }); }
       else if (ev.target.type === "radio" && ev.target.name.indexOf("c-") === 0) { var w = Object.assign({}, cur.v || {}); w[ev.target.closest("[data-item]").getAttribute("data-item")] = ev.target.value; save(i, { v: w }); }
       else if (ev.target.hasAttribute("data-tick")) { var t = Object.assign({}, cur.tick || {}); if (ev.target.checked) t[ev.target.getAttribute("data-tick")] = true; else delete t[ev.target.getAttribute("data-tick")]; save(i, { tick: t }); }
@@ -947,9 +971,25 @@
       t.value = t.value.slice(0, a) + "    " + t.value.slice(t.selectionEnd); t.selectionStart = t.selectionEnd = a + 4; save(+t.closest(".act").getAttribute("data-act"), { code: t.value });
     });
     main.addEventListener("click", function (ev) {
+      var sp = ev.target.closest("[data-send-paper]");
+      if (sp) {
+        var si = +sp.getAttribute("data-send-paper"), sa = subj.activities[sess.slots[si].activity], ss2 = ((store.read(slug).sessions || {})[date] || {}).practice || {}, txt = paperText(sa, ss2[si] || {}), note = sp.parentNode.querySelector(".send-note");
+        if (navigator.share) { navigator.share({ title: sa.title, text: txt }).catch(function () {}); return; }
+        try { navigator.clipboard.writeText(txt).then(function () { note.textContent = "Copied. Now open a message to Dad and paste it in."; }, function () { note.textContent = "That didn't copy. Ask Dad to sign in and look at this page."; }); } catch (e) { note.textContent = "That didn't copy. Ask Dad to sign in and look at this page."; }
+        return;
+      }
       var b = ev.target.closest("[data-check],[data-show],[data-clear]"); if (!b) return;
       var i = +(b.getAttribute("data-check") || b.getAttribute("data-show") || b.getAttribute("data-clear")), sl = sess.slots[i], a = subj.activities[sl.activity], box = main.querySelector('[data-act="' + i + '"]'), res = box.querySelector(".act-result");
       var show = b.hasAttribute("data-show");
+      if (a.kind === "paper") {
+        var cur2 = (((store.read(slug).sessions || {})[date] || {}).practice || {})[i] || {}, vals = cur2.v || {};
+        var blank = a.items.filter(function (it) { return !String(vals[it.n] || "").trim(); }).length;
+        if (blank && !box.hasAttribute("data-warned")) { box.setAttribute("data-warned", "1"); res.textContent = "You've left " + blank + " question" + (blank === 1 ? "" : "s") + " blank. Have a go at them, or press Hand it in again to hand it in anyway."; res.className = "act-result bad"; return; }
+        save(i, { submitted: true, ok: true, at: Date.now() });
+        var nb = store.session(store.read(slug), date); box.outerHTML = actHtml(subj, sess.slots[i], i, nb);
+        var nbox = main.querySelector('[data-act="' + i + '"] [data-send-paper]'); if (nbox) nbox.focus();
+        return;
+      }
       if (a.kind === "select" || a.kind === "choice" || a.kind === "write") { textActCheck(a, i, box, res, b.hasAttribute("data-show"), b.hasAttribute("data-clear")); return; }
       if (b.hasAttribute("data-clear")) {
         if (a.kind === "python") { var t = box.querySelector(".code-box"); t.value = a.starter || ""; box.querySelector(".py-out").hidden = true; save(i, { code: t.value }); t.focus(); }
@@ -993,6 +1033,24 @@
     });
   }
 
+  /* ---------- Past paper practice: every subject's practice papers in one place ---------- */
+  function pagePapers() {
+    var live = (DR.registry || []).filter(function (r) { return r.status === "live"; }).map(function (r) { return r.slug; });
+    loadSubjects(live, function () {
+      var html = live.map(function (slug) {
+        var subj = DR.subjects[slug], reg = registryItem(slug), papers = (subj && subj.sessions || []).filter(function (s) { return s.paper; });
+        var saved = (store.read(slug).sessions) || {};
+        var items = papers.map(function (s) {
+          var p = ((saved[s.id] || {}).practice) || {}, done = Object.keys(p).some(function (k) { return p[k].submitted; }), started = !!(saved[s.id] || {}).clock;
+          return '<li class="card" style="--accent-dark:' + reg.accent + '"><a href="' + BASE + "/past-papers/" + slug + "/" + s.id + '/"><strong>' + esc(s.title) + "</strong><span>" + esc(s.blurb || "") + " " + (done ? "Handed in." : started ? "Started, not handed in yet." : "Not started.") + "</span></a></li>";
+        }).join("");
+        return '<section class="section" aria-labelledby="pp-' + slug + '"><h2 id="pp-' + slug + '">' + esc(reg.name) + "</h2>" + (items ? '<ul class="sessions-list">' + items + "</ul>" : "<p>No practice papers for " + esc(reg.name) + " yet.</p>") + "</section>";
+      }).join("");
+      frame("past-papers", [{ href: BASE + "/", name: "Hub" }, { name: "Past paper practice" }],
+        '<div class="hero"><div><h1>Past paper practice</h1><p class="lede">Practice papers in the style of the real exams. Do one in a single go, against the timer, with no notes. Type your answers, hand it in, then send it to Dad to be marked.</p></div></div>' + html, "Past paper practice");
+    });
+  }
+
   function pageNotFound() {
     frame(null, [{ href: BASE + "/", name: "Hub" }, { name: "Not found" }], "<h1>Page not found</h1><p>Wrong dimension, Dougie. Head back to the <a href=\"" + BASE + "/\">hub</a>.</p>", "Page not found");
   }
@@ -1002,6 +1060,8 @@
     var path = location.pathname.slice(BASE.length).replace(/index\.html$/, "") || "/";
     var m;
     if (path === "/") return pageHub();
+    if (/^\/past-papers\/?$/.test(path)) return pagePapers();
+    if ((m = path.match(/^\/past-papers\/([a-z0-9-]+)\/([a-z0-9-]+)\/?$/))) return pageSession(m[1], m[2]);
     if ((m = path.match(/^\/([a-z0-9-]+)\/sessions\/([a-z0-9-]+)\/?$/))) return pageSession(m[1], m[2]);
     if ((m = path.match(/^\/([a-z0-9-]+)\/?$/))) return pageSubject(m[1]);
     pageNotFound();
