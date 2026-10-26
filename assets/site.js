@@ -536,7 +536,7 @@
         '<div class="hero session-head"><div><h1>' + esc(sess.title) + '</h1><p class="times">' + times + '</p></div><div class="portal" aria-hidden="true"></div></div>' +
         '<div id="mission" class="section" aria-live="polite"></div>' +
         '<details class="panel howto section" open><summary>How this works</summary><ol>' + howTo.map(function (t) { return "<li>" + esc(t) + "</li>"; }).join("") + "</ol></details>" +
-        ((sess.notebook || subj.notebook) ? '<div class="section nb-row no-print"><a class="btn btn-big" href="' + esc(sess.notebook || subj.notebook) + '" target="_blank" rel="noopener">Open the ' + esc(sess.short || subj.name) + " Notebook</a></div>" : "") +
+        (sess.paper ? paperLinks(subj, sess) : (sess.notebook || subj.notebook) ? '<div class="section nb-row no-print"><a class="btn btn-big" href="' + esc(sess.notebook || subj.notebook) + '" target="_blank" rel="noopener">Open the ' + esc(sess.short || subj.name) + " Notebook</a></div>" : "") +
         '<section class="section" aria-labelledby="tl-h"><h2 id="tl-h">Timeline</h2>' +
         '<div class="progress"><div class="bar" role="progressbar" aria-label="Slots done" aria-valuemin="0" aria-valuemax="' + countable(sess) + '" aria-valuenow="0"><i></i></div><p id="prog-text" aria-live="polite"></p></div>' +
         '<ol class="timeline">' + sess.slots.map(function (sl, i) { return slotHtml(subj, sess, sl, i, idx, ss); }).join("") + "</ol></section>" +
@@ -832,7 +832,7 @@
     var head = '<div class="act" data-act="' + i + '">' + (a.intro ? "<p>" + esc(a.intro) + "</p>" : "") + (a.code ? '<pre class="code">' + esc(a.code) + "</pre>" : "") +
       (a.kind === "sort" || a.kind === "binary" ? '<p class="act-list">The list: <strong>' + esc(a.list.join(", ")) + "</strong>" + (a.kind === "binary" ? ". Looking for <strong>" + esc(a.target) + "</strong>" : "") + "</p>" : "");
     var foot = '<div class="btn-row"><button type="button" class="btn" data-check="' + i + '">' + (a.kind === "python" ? "Run and check" : "Check") + '</button><button type="button" class="linkbtn" data-show="' + i + '">' + (a.kind === "python" && (saved.ok || saved.shown) ? "Hide the answers" : "Show the answers") + '</button><button type="button" class="linkbtn" data-clear="' + i + '">' + (a.kind === "python" ? "Start the code again" : "Clear and try again") + '</button></div><p class="act-result" aria-live="polite">' + (saved.ok ? "Done: you got it right." : "") + "</p>";
-    if (a.kind === "paper") return head + paperHtml(a, i, saved) + paperFoot(i, saved) + "</div>";
+    if (a.kind === "paper") return head + paperHtml(a, i, saved) + paperFoot(i, saved, a) + "</div>";
     if (a.kind === "select" || a.kind === "choice" || a.kind === "write") return head + textActHtml(a, i, saved) + (a.kind === "write" ? writeFoot(i, saved) : foot) + "</div>";
     if (a.kind === "python") {
       return head + "<p>" + esc(a.task) + '</p><label class="sr-only" for="code-' + i + '">Your Python code</label><textarea class="code-box" id="code-' + i + '" spellcheck="false" autocapitalize="off" autocomplete="off" rows="10">' + esc(saved.code != null ? saved.code : a.starter || "") + "</textarea>" +
@@ -877,6 +877,10 @@
       '<fieldset class="pick"><legend>Before you finish, check you have:</legend>' + a.checklist.map(function (c, k) { return '<label class="pick-row"><input type="checkbox" data-tick="' + k + '"' + (tick[k] ? " checked" : "") + "> <span>" + esc(c) + "</span></label>"; }).join("") + "</fieldset>";
   }
   /* Practice papers: typed answers that lock when handed in, then go to Dad for marking */
+  function paperLinks(subj, sess) {
+    var a = (subj.activities || {})[(sess.slots[0] || {}).activity] || {};
+    return a.pdf ? '<div class="section nb-row no-print"><a class="btn btn-big" href="' + BASE + esc(a.pdf) + '" target="_blank" rel="noopener">Open the question paper (PDF)</a></div>' : "";
+  }
   function paperHtml(a, i, saved) {
     var v = saved.v || {}, off = saved.submitted ? " disabled" : "", out = "";
     a.items.forEach(function (it) {
@@ -889,13 +893,14 @@
     });
     return out;
   }
-  function paperFoot(i, saved) {
+  function paperFoot(i, saved, a) {
     if (!saved.submitted) return '<div class="btn-row"><button type="button" class="btn btn-big" data-check="' + i + '">Hand it in</button></div><p class="act-result" aria-live="polite">Once you hand it in, you can\'t change your answers.</p>';
-    return '<div class="stuck send-dad"><p class="stuck-h">Handed in. Now send your answers to Dad</p><p>He\'ll get them marked and tell you how you did.</p><button type="button" class="btn btn-big" data-send-paper="' + i + '">Send my answers to Dad</button><p class="send-note" aria-live="polite"></p></div>';
+    return '<div class="stuck send-dad"><p class="stuck-h">Handed in. Now send your answers to Dad</p><p>He\'ll get them marked and tell you how you did.</p><button type="button" class="btn btn-big" data-send-paper="' + i + '">Send my answers to Dad</button><p class="send-note" aria-live="polite"></p></div>' +
+      (a.markscheme ? '<p class="pp-ms">Want to see how you did? <a class="btn btn-ghost" href="' + BASE + esc(a.markscheme) + '" target="_blank" rel="noopener">Open the mark scheme (PDF)</a></p>' : "");
   }
-  function paperText(a, saved) {
+  function paperText(a, saved, subjName) {
     var v = saved.v || {};
-    return a.title + " (Biology, 30 marks)" + (saved.at ? "\nHanded in: " + new Date(saved.at).toLocaleString("en-GB") : "") + "\n\n" + a.items.map(function (it) { return it.n + " [" + it.marks + "]: " + (String(v[it.n] || "").trim() || "(left blank)"); }).join("\n\n");
+    return a.title + " (" + subjName + ", " + a.items.reduce(function (t, it) { return t + it.marks; }, 0) + " marks)" + (saved.at ? "\nHanded in: " + new Date(saved.at).toLocaleString("en-GB") : "") + "\n\n" + a.items.map(function (it) { return it.n + " [" + it.marks + "]: " + (String(v[it.n] || "").trim() || "(left blank)"); }).join("\n\n");
   }
   function writeFoot(i, saved) { return '<div class="btn-row"><button type="button" class="btn" data-check="' + i + '">I\'ve finished</button></div><p class="act-result" aria-live="polite">' + (saved.ok ? "Done: " + words(saved.text) + " words." : "") + "</p>"; }
 
@@ -973,7 +978,7 @@
     main.addEventListener("click", function (ev) {
       var sp = ev.target.closest("[data-send-paper]");
       if (sp) {
-        var si = +sp.getAttribute("data-send-paper"), sa = subj.activities[sess.slots[si].activity], ss2 = ((store.read(slug).sessions || {})[date] || {}).practice || {}, txt = paperText(sa, ss2[si] || {}), note = sp.parentNode.querySelector(".send-note");
+        var si = +sp.getAttribute("data-send-paper"), sa = subj.activities[sess.slots[si].activity], ss2 = ((store.read(slug).sessions || {})[date] || {}).practice || {}, txt = paperText(sa, ss2[si] || {}, subj.name), note = sp.parentNode.querySelector(".send-note");
         if (navigator.share) { navigator.share({ title: sa.title, text: txt }).catch(function () {}); return; }
         try { navigator.clipboard.writeText(txt).then(function () { note.textContent = "Copied. Now open a message to Dad and paste it in."; }, function () { note.textContent = "That didn't copy. Ask Dad to sign in and look at this page."; }); } catch (e) { note.textContent = "That didn't copy. Ask Dad to sign in and look at this page."; }
         return;

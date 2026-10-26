@@ -88,6 +88,7 @@ DR.subjects["computer-science"] = {
       ] }
   ],
   activities: {
+    "paper-1": {"kind": "paper", "title": "Practice paper 1", "pdf": "/notes/computer-science-practice-paper-1.pdf", "markscheme": "/notes/computer-science-practice-paper-1-mark-scheme.pdf", "intro": "30 minutes, 30 marks. Answer every question in the boxes. No calculator, as in the real Paper 1: do any working in the box. The marks in brackets tell you how much to write: about one mark a minute. Spellcheck is off, like in the exam. When you've finished, press Hand it in, then send your answers to Dad.", "items": [{"n": "1(a)", "group": "Question 1: Systems architecture", "q": "State the purpose of the CPU.", "marks": 1, "type": "text", "lines": 2}, {"n": "1(b)", "q": "Which register holds the address of the next instruction to be fetched? Choose one.", "marks": 1, "type": "mcq", "options": ["Accumulator", "Memory Address Register (MAR)", "Memory Data Register (MDR)", "Program Counter (PC)"]}, {"n": "1(c)", "q": "Explain how increasing the number of cores in a CPU can improve its performance.", "marks": 2, "type": "text", "lines": 3}, {"n": "1(d)", "q": "Give one example of an embedded system.", "marks": 1, "type": "text", "lines": 1}, {"n": "2(a)", "group": "Question 2: Memory and storage", "q": "Explain two differences between RAM and ROM.", "marks": 2, "type": "text", "lines": 4}, {"n": "2(b)", "q": "Convert the binary number 10110110 into denary.", "marks": 1, "type": "text", "lines": 1}, {"n": "2(c)", "q": "Convert the denary number 75 into an 8-bit binary number.", "marks": 1, "type": "text", "lines": 1}, {"n": "2(d)", "q": "Convert the hexadecimal number 3F into denary.", "marks": 1, "type": "text", "lines": 1}, {"n": "2(e)", "q": "Add the binary numbers 01101100 and 00110101. Give your answer as an 8-bit binary number. Show your working.", "marks": 2, "type": "text", "lines": 3}, {"n": "2(f)", "q": "An image is 100 pixels wide and 50 pixels high. It has a colour depth of 8 bits. Calculate the file size of the image in bytes. Ignore metadata. Show your working.", "marks": 2, "type": "text", "lines": 3}, {"n": "2(g)", "q": "Describe one difference between lossy and lossless compression.", "marks": 2, "type": "text", "lines": 3}, {"n": "3(a)", "group": "Question 3: Networks", "q": "State what is meant by a LAN.", "marks": 1, "type": "text", "lines": 2}, {"n": "3(b)", "q": "A school uses a star topology. Explain one advantage of a star topology.", "marks": 2, "type": "text", "lines": 3}, {"n": "3(c)", "q": "Which protocol is used to send emails? Choose one.", "marks": 1, "type": "mcq", "options": ["FTP", "HTTP", "IMAP", "SMTP"]}, {"n": "3(d)", "q": "Describe what a DNS (Domain Name Server) does when a user types a web address into a browser.", "marks": 2, "type": "text", "lines": 3}, {"n": "4(a)", "group": "Question 4: Network security and systems software", "q": "Describe what is meant by phishing.", "marks": 2, "type": "text", "lines": 3}, {"n": "4(b)", "q": "Explain how a firewall helps to protect a network.", "marks": 2, "type": "text", "lines": 3}, {"n": "4(c)", "q": "Identify one function of an operating system and describe what it does.", "marks": 2, "type": "text", "lines": 3}, {"n": "5", "group": "Question 5: Legal issues", "q": "State two principles of the Data Protection Act 2018 that an online shop must follow with its customers' data.", "marks": 2, "type": "text", "lines": 3}]},
     "trace-for": {
       "kind": "trace",
       "title": "Trace table: a for loop",
@@ -343,6 +344,15 @@ DR.subjects["computer-science"] = {
     }
   },
   sessions: [
+    {
+      "id": "practice-paper-1",
+      "flexible": true,
+      "paper": true,
+      "title": "Practice paper 1: Computer systems",
+      "short": "Practice paper 1",
+      "blurb": "30 minutes, 30 marks, no calculator. Topics 1.1 to 1.6, in the style of Paper 1.",
+      "slots": [ { "type": "practice", "mins": 30, "activity": "paper-1", "title": "Practice paper 1: 30 minutes, 30 marks" } ]
+    },
     {
       "id": "paper-1",
       "flexible": true,
