@@ -1,5 +1,5 @@
 /* Dougie's Revision: English Language (AQA 8700).
-   Two flexible sessions, one per paper: slots have minutes, and the timer starts when Dougie presses Start.
+   Two sessions, one per paper, with no timer: he works through the slots in order; minutes are a rough guide only.
    Practice kinds here: select (pick the true statements), choice (multiple choice on an extract), write (timed writing with a checklist).
    Each paper has its own notebook ("notebook" on the session); each report gets its direct "link". */
 window.DR = window.DR || {};
@@ -19,12 +19,12 @@ DR.subjects["english-language"] = {
   },
   stuck: { title: "Can't remember something?", lines: ["Try hard to remember it first.", "Only then check your revision guide, class notes or knowledge organiser. They're a last resort.", "Write down anything you couldn't remember as a note."], dad: "Need a hand? Ask Dad, wherever and whenever you want. Just check he's not in a meeting first." },
   howTo: [
-    "There are two sessions, one for each paper. Do them on different days. Press Start when you're ready and the timer runs from then. You can pause it.",
+    "There are two sessions, one for each paper. Do them on different days. There's no timer: work through the slots in order, at your own pace.",
     "The notebooks are shared with your Gmail and your school account. If a report won't open while you're signed in to Google with your school account, switch to your Gmail and try again.",
     "Each report lives in the notebook for that paper, one report per exam question. Inside each report, do the first quiz BEFORE reading anything. Getting things wrong at this stage is useful, because it shows what to focus on.",
     "Every report has five parts, and you must do ALL FIVE, in this order: (1) the first quiz, (2) the key terms flashcards, (3) the exam mistakes section, (4) the final quiz, (5) the second flashcard set. Tick each part off on this page as you finish it. A report only counts as done when all five are ticked.",
     "The practice slots are on this page: picking true statements, questions on an extract, and a timed piece of writing for each Question 5. Write the Question 5 piece properly, as you would in the exam. Dad can read it.",
-    "Don't skip parts to keep up with the timer. Finish all five parts of a report before you move on, even if you run over. The timer shows you where you should be, not permission to skip.",
+    "Finish all five parts of a report before you move on. The minutes next to each slot are only a rough guide, not a deadline.",
     "When the session's over, the box at the top of the page asks you to send your results to Dad. Do it straight away: press Send my results to Dad and send him the message.",
     "You can use your revision guide, class notes or knowledge organiser whenever you want, but only as a last resort, when you really can't remember something. Anything you can't remember, write it down as a note.",
     "You can ask Dad for help wherever and whenever you want, as long as he's not in a meeting."

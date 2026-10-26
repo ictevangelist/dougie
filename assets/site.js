@@ -144,9 +144,8 @@
     if (subj._prepped) return; subj._prepped = true;
     (subj.sessions || []).forEach(function (s) {
       s._slug = subj.slug;
-      if (!s.flexible) return;
       var t = 0;
-      s.slots.forEach(function (sl) { sl.off = t * 60; t += sl.mins; sl.offEnd = t * 60; });
+      s.slots.forEach(function (sl) { if (!sl.mins && sl.start) sl.mins = mins(sl.end) - mins(sl.start); t += sl.mins || 0; });
       s.totalMins = t;
     });
   }
@@ -247,40 +246,24 @@
     return sl.title;
   }
   /* Where a session stands at a moment: before, on (with the slot), or after */
-  function sessionState(sess, at) {
-    at = at || now();
-    if (sess.flexible) {
-      var c = clockOf(sess); if (!c) return { when: "ready" };
-      var e = Math.floor(c.el + (c.since ? Math.max(0, at.getTime() - c.since) / 1000 : 0));
-      if (e >= sess.totalMins * 60) return { when: "past" };
-      for (var k = 0; k < sess.slots.length; k++) {
-        var f = sess.slots[k];
-        if (e >= f.off && e < f.offEnd) return { when: "on", i: k, slot: f, left: f.offEnd - e, next: sess.slots[k + 1], paused: !c.since };
-      }
-    }
-    var today = todayIso(at), t = secsOfDay(at);
-    if (today < sess.date) return { when: "future" };
-    if (today > sess.date) return { when: "past" };
-    if (t < mins(sess.start) * 60) return { when: "before", secs: mins(sess.start) * 60 - t };
-    if (t >= mins(sess.end) * 60) return { when: "past" };
-    for (var i = 0; i < sess.slots.length; i++) {
-      var sl = sess.slots[i];
-      if (t >= mins(sl.start) * 60 && t < mins(sl.end) * 60) return { when: "on", i: i, slot: sl, left: mins(sl.end) * 60 - t, next: sess.slots[i + 1] };
-    }
-    return { when: "on", i: -1 };
+  /* No timers: he is on the first slot he hasn't finished yet */
+  function sessionState(sess) {
+    var d = store.read(sess._slug), ss = (d.sessions || {})[skey(sess)] || { done: {} }, started = Object.keys(ss.done || {}).length > 0;
+    for (var i = 0; i < sess.slots.length; i++) if (!(ss.done || {})[i]) return { when: "on", i: i, slot: sess.slots[i], next: sess.slots[i + 1], started: started };
+    return { when: "past" };
   }
   /* The next session across all live subjects, from today onwards */
   function nextSession(slugs) {
-    var today = todayIso(), best = null, running = null;
+    var today = todayIso(), running = null, todays = null;
     slugs.forEach(function (slug) {
       var subj = DR.subjects[slug]; if (!subj) return;
       (subj.sessions || []).forEach(function (s) {
-        var st = sessionState(s);
-        if (s.flexible) { if (st.when === "on" && !running) running = { slug: slug, subj: subj, s: s }; return; }
-        if (s.date >= today && st.when !== "past" && (!best || s.date + s.start < best.s.date + best.s.start)) best = { slug: slug, subj: subj, s: s };
+        var st = sessionState(s); if (st.when === "past") return;
+        if (st.started && !running) running = { slug: slug, subj: subj, s: s };
+        if (s.date === today && !todays) todays = { slug: slug, subj: subj, s: s };
       });
     });
-    return running || best;
+    return running || todays;
   }
   function money(n) { return (DR.pay.currency || "") + n; }
   /* Money is kept in pence and can include a half penny */
@@ -437,7 +420,7 @@
             : '<p><span class="chip">Coming soon</span></p><p>Not yet. Enjoy it while it lasts.</p>') + "</article>";
       }).join("");
       frame("", null,
-        '<div class="hero"><div><h1>Right then, Dougie.</h1><p class="lede">This is your revision lab. The plan, the timer and the money jar are all in here, so there\'s nothing to work out. Turn up, do the thing on screen, move on when the timer says so.</p></div><div class="wheel-wrap"><div class="wheel">' + wheelSvg() + '<button type="button" class="wheel-btn" id="wheel" aria-label="SPIN Dougie\'s Wheel of Fortune for a question">SPIN</button></div><p class="wheel-cap"><strong>Dougie\'s Wheel of Fortune</strong><br>Tap to spin. Right first time: +<span id="wheel-prize">' + pence(prize(Object.keys(quizStore().banked).length)) + '</span>. Wrong: nothing lost.</p></div></div>' +
+        '<div class="hero"><div><h1>Right then, Dougie.</h1><p class="lede">This is your revision lab. The plan and the money jar are all in here, so there\'s nothing to work out. Do each slot in order, tick each part off as you go, and take your time.</p></div><div class="wheel-wrap"><div class="wheel">' + wheelSvg() + '<button type="button" class="wheel-btn" id="wheel" aria-label="SPIN Dougie\'s Wheel of Fortune for a question">SPIN</button></div><p class="wheel-cap"><strong>Dougie\'s Wheel of Fortune</strong><br>Tap to spin. Right first time: +<span id="wheel-prize">' + pence(prize(Object.keys(quizStore().banked).length)) + '</span>. Wrong: nothing lost.</p></div></div>' +
         '<dialog class="quiz" id="wheel-q" aria-labelledby="wheel-q-h"></dialog>' +
         '<div id="hub-now" aria-live="polite"></div>' +
         jarHtml() +
@@ -446,18 +429,9 @@
         var box = document.getElementById("hub-now"); if (!box) return;
         var n = nextSession(live), html = "";
         if (n) {
-          var st = sessionState(n.s), href = BASE + "/" + n.slug + "/sessions/" + skey(n.s) + "/";
-          if (st.when === "on" && st.i >= 0) {
-            html = '<section class="mission section" aria-labelledby="hub-h"><p class="kicker">' + (n.s.flexible ? (st.paused ? "Your session is paused" : "Your session is running") : "Today\'s session is running") + '</p><h2 id="hub-h">You\'re on ' + esc(slotTitle(n.subj, st.slot, reportIndex(n.subj))) + '</h2><p class="countdown">' + clockText(st.left) + "<small>left</small></p>" +
-              '<a class="btn btn-big" href="' + href + '">Back to it</a></section>';
-          } else if (st.when === "before") {
-            html = '<section class="mission section" aria-labelledby="hub-h"><p class="kicker">Today\'s session</p><h2 id="hub-h">' + esc(n.s.title) + "</h2><p>" + longDate(n.s.date) + ", " + range(n.s.start, n.s.end) + '</p><p class="countdown">' + clockText(st.secs) + "<small>until it starts</small></p>" +
-              '<a class="btn btn-big" href="' + href + '">Start</a>' + "</section>";
-          } else if (st.when === "future") {
-            html = '<section class="mission section" aria-labelledby="hub-h"><p class="kicker">Next session</p><h2 id="hub-h">' + esc(n.s.title) + '</h2><p class="lede">' + longDate(n.s.date) + ", " + range(n.s.start, n.s.end) + '</p><div class="btn-row"><a class="btn" href="' + href + '">See the plan</a></div>' + "</section>";
-          } else {
-            html = '<section class="mission section" aria-labelledby="hub-h"><p class="kicker">Today\'s session</p><h2 id="hub-h">' + esc(n.s.title) + '</h2><p>Between slots.</p><a class="btn btn-big" href="' + href + '">Open the session</a></section>';
-          }
+          var st = sessionState(n.s), href = BASE + (n.s.paper ? "/past-papers/" + n.slug + "/" : "/" + n.slug + "/sessions/") + skey(n.s) + "/";
+          html = '<section class="mission section" aria-labelledby="hub-h"><p class="kicker">' + (st.started ? "Carry on where you left off" : "Today\'s session") + '</p><h2 id="hub-h">' + esc(n.s.title) + "</h2><p>" + (st.started ? "You\'re on " + esc(slotTitle(n.subj, st.slot, reportIndex(n.subj))) + ", slot " + (st.i + 1) + " of " + n.s.slots.length + "." : "Work through it in order, at your own pace.") + "</p>" +
+            '<a class="btn btn-big" href="' + href + '">' + (st.started ? "Back to it" : "Open the session") + "</a></section>";
         }
         if (box.getAttribute("data-html") !== html) { box.innerHTML = html; box.setAttribute("data-html", html); }
       }
@@ -489,7 +463,7 @@
           }).join("") + "</ul></section>";
       }).join("");
       var sessions = sessionsNewestFirst(subj).filter(function (s) { return !s.paper; }).map(function (s) {
-        return '<li class="card" style="--accent-dark:' + reg.accent + '"><a href="' + BASE + "/" + slug + "/sessions/" + skey(s) + '/"><strong>' + esc(s.title) + "</strong><span>" + (s.flexible ? "Do it when you're ready. About " + hrs(s.totalMins) + "." : longDate(s.date) + ", " + range(s.start, s.end)) + "</span></a></li>";
+        return '<li class="card" style="--accent-dark:' + reg.accent + '"><a href="' + BASE + "/" + slug + "/sessions/" + skey(s) + '/"><strong>' + esc(s.title) + "</strong><span>" + (s.flexible ? "" : longDate(s.date) + ". ") + "About " + hrs(s.totalMins) + ", at your own pace.</span></a></li>";
       }).join("");
       frame(slug, [{ href: BASE + "/", name: "Hub" }, { name: subj.name }],
         '<div class="hero"><div><h1>' + esc(subj.heading) + '</h1><p class="lede">' + esc(subj.paper) + '</p>' + (subj.notebook ? '<p><a class="btn btn-big" href="' + esc(subj.notebook) + '" target="_blank" rel="noopener">Open the ' + esc(subj.name) + " Notebook</a></p>" : (subj.sessions || []).filter(function (x) { return x.notebook; }).map(function (x) { return '<a class="btn btn-big" href="' + esc(x.notebook) + '" target="_blank" rel="noopener">Open the ' + esc(x.short) + " Notebook</a>"; }).join(" ")) + "</div></div>" +
@@ -529,9 +503,8 @@
       if (fixed) { data.sessions[date] = ss; store.write(slug, data); }
       var breaks = (sess.breaks || []).map(function (b) { return "break " + range(b.start, b.end); }).join(", ");
       var howTo = sess.howTo || subj.howTo || [];
-      var breakMins = sess.flexible ? sess.slots.filter(function (x) { return x.type === "break"; }).reduce(function (n, x) { return n + x.mins; }, 0) : 0;
-      var times = sess.flexible ? "About " + hrs(sess.totalMins) + (breakMins ? ", including a " + breakMins + " minute break" : "") + ". Start it whenever you're ready."
-        : longDate(date) + ", " + range(sess.start, sess.end) + (breaks ? ", " + breaks : "");
+      var breakMins = sess.slots.filter(function (x) { return x.type === "break"; }).reduce(function (n, x) { return n + (x.mins || 0); }, 0);
+      var times = (sess.flexible ? "" : longDate(date) + ". ") + "About " + hrs(sess.totalMins) + (breakMins ? ", including a " + breakMins + " minute break" : "") + ". No timer: work through it in order, at your own pace.";
       frame(sess.paper ? "past-papers" : slug, sess.paper ? [{ href: BASE + "/", name: "Hub" }, { href: BASE + "/past-papers/", name: "Past paper practice" }, { name: subj.name + ": " + (sess.short || sess.title) }] : [{ href: BASE + "/", name: "Hub" }, { href: BASE + "/" + slug + "/", name: subj.name }, { name: sess.flexible ? sess.short || sess.title : longDate(date) }],
         '<div class="hero session-head"><div><h1>' + esc(sess.title) + '</h1><p class="times">' + times + '</p></div><div class="portal" aria-hidden="true"></div></div>' +
         '<div id="mission" class="section" aria-live="polite"></div>' +
@@ -591,11 +564,11 @@
       extra = promptHtml("p-" + i, subj.checkPrompt.replace("{unit}", sl.unit + " " + (u ? u.title : "")), "Unit check prompt", subj.checkNote);
     }
     var style = u ? unitStyle(u) : (sl.type === "break" ? ' style="--accent-dark:#95A5A6"' : ' style="--accent-dark:#ECF0F1"');
-    var done = sl.type === "break" ? "" : sl.type === "report" ? '<p class="done-status" data-status="' + i + '">' + (isDone ? "Done: all five parts ticked off." : "This report is done when all five parts are ticked off.") + "</p>"
+    var done = sl.type === "break" ? '<label class="done"><input type="checkbox" data-done="' + i + '"' + (isDone ? " checked" : "") + "> I\'ve had my break</label>" : sl.type === "report" ? '<p class="done-status" data-status="' + i + '">' + (isDone ? "Done: all five parts ticked off." : "This report is done when all five parts are ticked off.") + "</p>"
       : '<label class="done"><input type="checkbox" data-done="' + i + '"' + (isDone ? " checked" : "") + "> Done</label>";
     var chip = code ? '<span class="chip">' + esc(code) + "</span>" : (u ? '<span class="chip">' + esc(u.code === "Mixed" ? "Mixed" : "Unit " + u.code) + "</span>" : "");
     return '<li class="card slot slot-' + sl.type + (isDone ? " is-done" : "") + '"' + style + ' id="slot-' + i + '" data-slot="' + i + '">' +
-      '<div class="slot-top"><span class="slot-time">' + (sl.start ? range(sl.start, sl.end) : "Slot " + (i + 1)) + '</span><span class="slot-dur">' + dur(sl) + "</span>" + chip +
+      '<div class="slot-top"><span class="slot-time">Slot ' + (i + 1) + '</span><span class="slot-dur">about ' + dur(sl) + "</span>" + chip +
       '<span class="now-slot"></span><span class="done-slot">' + (isDone ? '<span class="badge-done">Done</span>' : "") + "</span></div>" +
       "<h3>" + esc(sl.type === "report" ? (idx[sl.report] ? idx[sl.report].report.title : sl.report) : slotTitle(subj, sl, idx)) + "</h3>" + (focus ? "<p>" + esc(focus) + "</p>" : "") + (sl.note ? '<p class="note">' + esc(sl.note) + "</p>" : "") +
       extra + done + "</li>";
@@ -628,19 +601,13 @@
       return '<p class="parts-mission"><strong>' + c + " of " + n + " parts done.</strong> " + (c === n ? "This report is finished." : "Tick each part off in this slot, with your scores, before you move on.") + ' <a href="#slot-' + i + '">Go to the slot</a></p>';
     }
     function missionHtml(st) {
-      if (st.when === "ready") return '<section class="mission" aria-labelledby="m-h"><p class="kicker">Ready when you are</p><h2 id="m-h">' + esc(sess.title) + "</h2><p>This one takes about " + hrs(sess.totalMins) + ". Press Start when you're sat down with a drink, a pen and some paper. The timer runs from then, and you can pause it if you need to stop.</p>" +
-        '<button type="button" class="btn btn-big" id="clock-start">Start</button></section>';
-      if (st.when === "future") return '<section class="mission" aria-labelledby="m-h"><p class="kicker">Next session</p><h2 id="m-h">' + longDate(date) + ", " + sess.start + '</h2><p>Have a look through the plan below so nothing surprises you. When it starts, this box tells you exactly what to do and how long you\'ve got.</p></section>';
-      if (st.when === "before") return '<section class="mission" aria-labelledby="m-h"><p class="kicker">Today</p><h2 id="m-h">Starts at ' + sess.start + '</h2><p class="countdown">' + clockText(st.secs) + "<small>to go</small></p><p>Get a drink, get your calculator, and get the notebook open.</p></section>";
       if (st.when === "past") return completeHtml();
       if (st.i < 0) return "";
       var sl = st.slot, title = slotTitle(subj, sl, idx), isBreak = sl.type === "break";
-      var nextLine = st.next ? '<p class="next">Next: <strong>' + esc(slotTitle(subj, st.next, idx)) + "</strong> at " + st.next.start + "</p>" : '<p class="next">This is the last one. Finish strong.</p>';
-      if (sess.flexible) nextLine = st.next ? '<p class="next">Next: <strong>' + esc(slotTitle(subj, st.next, idx)) + "</strong>, " + dur(st.next) + "</p>" : '<p class="next">This is the last one. Finish strong.</p>';
-      var controls = sess.flexible ? '<div class="btn-row clock-row">' + (st.paused ? '<button type="button" class="btn" id="clock-resume">Carry on</button>' : '<button type="button" class="btn btn-ghost" id="clock-pause">Pause</button>') +
-        '<button type="button" class="btn btn-ghost" id="clock-skip">' + (st.next ? "Done early? Next slot" : "Finish the session") + "</button></div>" : "";
-      return '<section class="mission" aria-labelledby="m-h"><p class="kicker">' + (st.paused ? "Paused" : isBreak ? "Break" : "Right now") + '</p><h2 id="m-h">' + esc(title) + '</h2>' +
-        '<p class="countdown">' + clockText(st.left) + "<small>" + (st.paused ? "left, paused" : isBreak ? "until you're back on" : "left on this one") + "</small></p>" + controls +
+      var nextLine = st.next ? '<p class="next">Next: <strong>' + esc(slotTitle(subj, st.next, idx)) + "</strong></p>" : '<p class="next">This is the last one. Finish strong.</p>';
+      return '<section class="mission" aria-labelledby="m-h"><p class="kicker">' + (isBreak ? "Break" : "Slot " + (st.i + 1) + " of " + sess.slots.length) + '</p><h2 id="m-h">' + esc(title) + '</h2>' +
+        '<p class="pace">' + (isBreak ? "Have a proper break, about " + sl.mins + " minutes. Come back when you're ready." : "About " + sl.mins + " minutes, but there's no timer. Take your time and do it properly.") + "</p>" +
+        (isBreak ? '<p><button type="button" class="btn btn-big" id="break-done" data-i="' + st.i + '">I\'ve had my break</button></p>' : "") +
         (sl.note ? '<p class="note"><strong>' + esc(sl.note) + "</strong></p>" : "") +
         '<ol class="steps">' + steps(sl).map(function (s) { return "<li>" + esc(s) + "</li>"; }).join("") + "</ol>" + (sl.type === "report" ? partsStatus(st.i) : "") +
         ((sl.type === "report" || (sl.type === "practice" && ((subj.activities || {})[sl.activity] || {}).kind !== "paper")) && subj.stuck ? '<div class="stuck"><p class="stuck-h">' + esc(subj.stuck.title) + "</p><ol>" + subj.stuck.lines.map(function (s) { return "<li>" + esc(s) + "</li>"; }).join("") + "</ol>" + (subj.stuck.dad ? '<p class="stuck-dad">' + esc(subj.stuck.dad) + "</p>" : "") + "</div>" : "") +
@@ -686,14 +653,8 @@
         if (on) li.setAttribute("aria-current", "step"); else li.removeAttribute("aria-current");
       });
       var box = document.getElementById("mission"), html = missionHtml(st);
-      var stable = html.replace(/<p class="countdown">.*?<\/p>/, "");
-      if (box.getAttribute("data-key") !== stable) { box.innerHTML = html; box.setAttribute("data-key", stable); }
-      else { var cd = box.querySelector(".countdown"), fresh = html.match(/<p class="countdown">(.*?)<\/p>/); if (cd && fresh) cd.innerHTML = fresh[1]; }
+      if (box.getAttribute("data-key") !== html) { box.innerHTML = html; box.setAttribute("data-key", html); }
       document.body.classList.toggle("focus", focus && st.when === "on");
-      /* the tab title carries the countdown, for when the notebook is the tab in front */
-      if (st.when === "on" && st.i >= 0) document.title = clockText(st.left) + " left, " + slotTitle(subj, st.slot, idx).split(" ")[0] + " | Dougie's Revision";
-      else if (st.when === "before") document.title = "Starts in " + clockText(st.secs) + " | Dougie's Revision";
-      else document.title = baseTitle;
     }
     function partEdit(ev) {
       var t = ev.target, box = t.closest("[data-parts]"); if (!box || !t.hasAttribute("data-pf")) return false;
@@ -751,20 +712,10 @@
         try { navigator.clipboard.writeText(msg).then(ok, no); } catch (e) { no(); }
         return;
       }
-      if (/^clock-/.test(ev.target.id)) {
-        var dc = store.read(slug), sc = store.session(dc, date), t0 = Date.now(), cs = sessionState(sess);
-        if (ev.target.id === "clock-start") sc.clock = { el: 0, since: t0, first: t0 };
-        var c = sc.clock;
-        if (c) {
-          var el = c.el + (c.since ? (t0 - c.since) / 1000 : 0);
-          if (ev.target.id === "clock-pause") { c.el = el; c.since = null; }
-          if (ev.target.id === "clock-resume") c.since = t0;
-          if (ev.target.id === "clock-skip" && cs.when === "on") { c.el = cs.next ? cs.next.off : sess.totalMins * 60; if (c.since) c.since = t0; }
-          store.write(slug, dc);
-        }
-        document.getElementById("mission").setAttribute("data-key", ""); clock(); wake();
-        var f = document.querySelector("#mission button"); if (f) f.focus();
-        return;
+      if (ev.target.id === "break-done") {
+        var db = store.read(slug), sb = store.session(db, date); sb.done[+ev.target.getAttribute("data-i")] = true; store.write(slug, db);
+        var bl = main.querySelector('[data-done="' + ev.target.getAttribute("data-i") + '"]'); if (bl) bl.checked = true;
+        progress(); clock(); var f2 = document.querySelector("#mission .btn"); if (f2) f2.focus(); return;
       }
       if (ev.target.id === "reset") { document.getElementById("reset-confirm").hidden = false; document.getElementById("reset-yes").focus(); }
       if (ev.target.id === "reset-no") { document.getElementById("reset-confirm").hidden = true; document.getElementById("reset").focus(); }
@@ -991,6 +942,7 @@
         var blank = a.items.filter(function (it) { return !String(vals[it.n] || "").trim(); }).length;
         if (blank && !box.hasAttribute("data-warned")) { box.setAttribute("data-warned", "1"); res.textContent = "You've left " + blank + " question" + (blank === 1 ? "" : "s") + " blank. Have a go at them, or press Hand it in again to hand it in anyway."; res.className = "act-result bad"; return; }
         save(i, { submitted: true, ok: true, at: Date.now() });
+        var dd = store.read(slug); store.session(dd, date).done[i] = true; store.write(slug, dd);
         var nb = store.session(store.read(slug), date); box.outerHTML = actHtml(subj, sess.slots[i], i, nb);
         var nbox = main.querySelector('[data-act="' + i + '"] [data-send-paper]'); if (nbox) nbox.focus();
         return;
@@ -1046,13 +998,13 @@
         var subj = DR.subjects[slug], reg = registryItem(slug), papers = (subj && subj.sessions || []).filter(function (s) { return s.paper; });
         var saved = (store.read(slug).sessions) || {};
         var items = papers.map(function (s) {
-          var p = ((saved[s.id] || {}).practice) || {}, done = Object.keys(p).some(function (k) { return p[k].submitted; }), started = !!(saved[s.id] || {}).clock;
+          var p = ((saved[s.id] || {}).practice) || {}, done = Object.keys(p).some(function (k) { return p[k].submitted; }), started = Object.keys(p).some(function (k) { return Object.keys(p[k].v || {}).length; });
           return '<li class="card" style="--accent-dark:' + reg.accent + '"><a href="' + BASE + "/past-papers/" + slug + "/" + s.id + '/"><strong>' + esc(s.title) + "</strong><span>" + esc(s.blurb || "") + " " + (done ? "Handed in." : started ? "Started, not handed in yet." : "Not started.") + "</span></a></li>";
         }).join("");
         return '<section class="section" aria-labelledby="pp-' + slug + '"><h2 id="pp-' + slug + '">' + esc(reg.name) + "</h2>" + (items ? '<ul class="sessions-list">' + items + "</ul>" : "<p>No practice papers for " + esc(reg.name) + " yet.</p>") + "</section>";
       }).join("");
       frame("past-papers", [{ href: BASE + "/", name: "Hub" }, { name: "Past paper practice" }],
-        '<div class="hero"><div><h1>Past paper practice</h1><p class="lede">Practice papers in the style of the real exams. Do one in a single go, against the timer, with no notes. Type your answers, hand it in, then send it to Dad to be marked.</p></div></div>' + html, "Past paper practice");
+        '<div class="hero"><div><h1>Past paper practice</h1><p class="lede">Practice papers in the style of the real exams. Do one in a single go, with no notes. There\'s no timer, but each one says roughly how long to allow. Type your answers, hand it in, then send it to Dad to be marked.</p></div></div>' + html, "Past paper practice");
     });
   }
 

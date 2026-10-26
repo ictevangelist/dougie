@@ -25,7 +25,7 @@ The wheel on the hub lands on a unit and asks a question from that subject's `qu
 
 ## Flexible sessions and practice slots
 
-A session with `id` and `flexible: true` has no date or clock times: each slot has `mins`, and the timer starts when Dougie presses Start (he can pause, and skip to the next slot). Its page is /<subject>/sessions/<id>/; copy any session folder's index.html there. Practice slots (`type: "practice"`) point at an entry in the subject's `activities`: `trace` (expected rows given), `truth` (worked out from the expression), `sort` (bubble, insertion or merge, worked out from the list), `binary` (worked out from the list and target) and `python` (runs in the browser with Pyodide in assets/py-worker.js and checks the tests).
+There are no timers anywhere (Mark, 26 Oct). Every session is worked through in order: the current slot is the first one not yet finished, and each slot's minutes are shown only as a rough guide. A session with `id` and `flexible: true` has no date; dated sessions just show their date. Its page is /<subject>/sessions/<id>/; copy any session folder's index.html there. Practice slots (`type: "practice"`) point at an entry in the subject's `activities`: `trace` (expected rows given), `truth` (worked out from the expression), `sort` (bubble, insertion or merge, worked out from the list), `binary` (worked out from the list and target) and `python` (runs in the browser with Pyodide in assets/py-worker.js and checks the tests).
 
 ## Sign-in
 
