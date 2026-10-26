@@ -32,53 +32,53 @@ DR.subjects["english-language"] = {
   units: [
     { code: "1.1", title: "Paper 1 Question 1: Listing information", colour: "#3498DB", dark: "#3498DB", tint: "#E3F1FA",
       reports: [
-        { code: "1.1", title: "Question 1: Listing information", focus: "Finding four true things in the first part of the fiction extract." }
+        { code: "1.1", link: "https://notebooklm.link.google/f2rHf440Axpl", title: "Question 1: Listing information", focus: "Finding four true things in the first part of the fiction extract." }
       ] },
     { code: "1.2", title: "Paper 1 Question 2: Language analysis", colour: "#9B59B6", dark: "#9B59B6", tint: "#F1E8F5",
       reports: [
-        { code: "1.2", title: "Question 2: Language analysis", focus: "How the writer uses words, phrases, techniques and sentences, and the effect on the reader." }
+        { code: "1.2", link: "https://notebooklm.link.google/GTXKUArgXqxQ", title: "Question 2: Language analysis", focus: "How the writer uses words, phrases, techniques and sentences, and the effect on the reader." }
       ] },
     { code: "1.3", title: "Paper 1 Question 3: Structure", colour: "#1ABC9C", dark: "#1ABC9C", tint: "#DDF5F0",
       reports: [
-        { code: "1.3", title: "Question 3: Structure", focus: "How the whole extract is put together: the opening, the shifts in focus and the ending." }
+        { code: "1.3", link: "https://notebooklm.link.google/kswdxY4JVsSJ", title: "Question 3: Structure", focus: "How the whole extract is put together: the opening, the shifts in focus and the ending." }
       ] },
     { code: "1.4", title: "Paper 1 Question 4: Evaluation", colour: "#E74C3C", dark: "#E74C3C", tint: "#FCE6E4",
       reports: [
-        { code: "1.4", title: "Question 4: Evaluation", focus: "Agreeing or disagreeing with a statement about the extract, with evidence and analysis." }
+        { code: "1.4", link: "https://notebooklm.link.google/NwDj8kYL4Uf8", title: "Question 4: Evaluation", focus: "Agreeing or disagreeing with a statement about the extract, with evidence and analysis." }
       ] },
     { code: "1.5", title: "Paper 1 Question 5: Descriptive or narrative writing", colour: "#F39C12", dark: "#F39C12", tint: "#FDF0DC",
       reports: [
-        { code: "1.5a", title: "Question 5: Descriptive writing", focus: "Planning and writing a description that's vivid, controlled and accurate." },
-        { code: "1.5b", title: "Question 5: Narrative writing", focus: "Planning and writing a story with a clear shape, voice and ending." }
+        { code: "1.5a", link: "https://notebooklm.link.google/Dknty0zZWxXr", title: "Question 5: Descriptive writing", focus: "Planning and writing a description that's vivid, controlled and accurate." },
+        { code: "1.5b", link: "https://notebooklm.link.google/ueGTrJbDy8Vx", title: "Question 5: Narrative writing", focus: "Planning and writing a story with a clear shape, voice and ending." }
       ] },
     { code: "2.1", title: "Paper 2 Question 1: True statements", colour: "#2980B9", dark: "#2980B9", tint: "#E1EDF5",
       reports: [
-        { code: "2.1", title: "Question 1: True statements", focus: "Choosing the four true statements about part of Source A." }
+        { code: "2.1", link: "https://notebooklm.link.google/qgf0BSQWykvj", title: "Question 1: True statements", focus: "Choosing the four true statements about part of Source A." }
       ] },
     { code: "2.2", title: "Paper 2 Question 2: Summary of differences", colour: "#8E44AD", dark: "#8E44AD", tint: "#EEE3F3",
       reports: [
-        { code: "2.2", title: "Question 2: Summary of differences", focus: "Summarising the differences between the two sources, with inferences and quotations." }
+        { code: "2.2", link: "https://notebooklm.link.google/r6BLEkGegVNd", title: "Question 2: Summary of differences", focus: "Summarising the differences between the two sources, with inferences and quotations." }
       ] },
     { code: "2.3", title: "Paper 2 Question 3: Language analysis", colour: "#16A085", dark: "#16A085", tint: "#DEF2EE",
       reports: [
-        { code: "2.3", title: "Question 3: Language analysis", focus: "How the writer of one source uses language to get their ideas across." }
+        { code: "2.3", link: "https://notebooklm.link.google/Yoe9LVeEZgjA", title: "Question 3: Language analysis", focus: "How the writer of one source uses language to get their ideas across." }
       ] },
     { code: "2.4", title: "Paper 2 Question 4: Comparing perspectives", colour: "#D35400", dark: "#D35400", tint: "#F9E5D9",
       reports: [
-        { code: "2.4", title: "Question 4: Comparing perspectives", focus: "Comparing the two writers' views and the methods they use to show them." }
+        { code: "2.4", link: "https://notebooklm.link.google/6RdJCLbBjZAK", title: "Question 4: Comparing perspectives", focus: "Comparing the two writers' views and the methods they use to show them." }
       ] },
     { code: "2.5", title: "Paper 2 Question 5: Writing your viewpoint", colour: "#E67E22", dark: "#E67E22", tint: "#FCEDE0",
       reports: [
-        { code: "2.5", title: "Question 5: Writing your viewpoint", focus: "Writing an article, letter, speech or essay that argues your view." }
+        { code: "2.5", link: "https://notebooklm.link.google/lUNqSIJEMiWi", title: "Question 5: Writing your viewpoint", focus: "Writing an article, letter, speech or essay that argues your view." }
       ] },
     { code: "S", title: "Technical accuracy", colour: "#2ECC71", dark: "#2ECC71", tint: "#E2F8EB",
       reports: [
-        { code: "S", title: "Technical accuracy: spelling, punctuation and grammar", focus: "Sentences, punctuation, spelling and vocabulary: the marks for accuracy in both Question 5s." }
+        { code: "S", link: "https://notebooklm.link.google/lnBXVzJ2SYjF", title: "Technical accuracy: spelling, punctuation and grammar", focus: "Sentences, punctuation, spelling and vocabulary: the marks for accuracy in both Question 5s." }
       ] },
     { code: "Mixed", title: "Mixed retrieval", colour: "#95A5A6", dark: "#95A5A6", tint: "#EEF0F0",
       reports: [
-        { code: "Mixed 1", title: "Paper 1 mixed retrieval", focus: "Questions from across Paper 1, mixed up." },
-        { code: "Mixed 2", title: "Paper 2 mixed retrieval", focus: "Questions from across Paper 2, mixed up." }
+        { code: "Mixed 1", link: "https://notebooklm.link.google/HClnh43wZccW", title: "Paper 1 mixed retrieval", focus: "Questions from across Paper 1, mixed up." },
+        { code: "Mixed 2", link: "https://notebooklm.link.google/4ltqZczbEFZX", title: "Paper 2 mixed retrieval", focus: "Questions from across Paper 2, mixed up." }
       ] }
   ],
   activities: {
@@ -659,7 +659,7 @@ DR.subjects["english-language"] = {
       "flexible": true,
       "title": "Paper 1: Explorations in creative reading and writing",
       "short": "Paper 1",
-      "notebook": "",
+      "notebook": "https://notebook.google.com/notebook/08da1762-6282-437d-b95e-d8a2b197a881",
       "slots": [
         {
           "type": "setup",
@@ -747,7 +747,7 @@ DR.subjects["english-language"] = {
       "flexible": true,
       "title": "Paper 2: Writers' viewpoints and perspectives",
       "short": "Paper 2",
-      "notebook": "",
+      "notebook": "https://notebook.google.com/notebook/581c95ce-10b8-447c-8cd5-1f3ebead9799",
       "slots": [
         {
           "type": "setup",
