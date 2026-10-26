@@ -21,7 +21,7 @@ DR.subjects["computer-science"] = {
   stuck: { title: "Can't remember something?", lines: ["Try hard to remember it first.", "Only then check your revision guide, class notes or knowledge organiser. They're a last resort.", "Write down anything you couldn't remember as a note."], dad: "Need a hand? Ask Dad, wherever and whenever you want. Just check he's not in a meeting first." },
   howTo: [
     "There are two sessions, one for each paper. They're too big to do in one go, so do them on different days. Press Start when you're ready and the timer runs from then. You can pause it.",
-    "Open the reports while you're signed in to Google with your own Gmail account, not your school one. The notebooks are shared with your Gmail, so they won't open for the school account.",
+    "The notebooks are shared with your Gmail and your school account. If a report won't open while you're signed in to Google with your school account, switch to your Gmail and try again.",
     "Each report lives in the notebook for that paper. Inside each report, do the first quiz BEFORE reading anything. Getting things wrong at this stage is useful, because it shows what to focus on.",
     "The order of work in each report slot is: (1) the first quiz, (2) the key terms flashcards, (3) the exam mistakes section. Then, (4) if there's time, the final quiz and the second flashcard set.",
     "Paper 2 has practice slots: trace tables, sorts, searches, truth tables and Python. Do each one on paper first, because in the exam you write it all by hand. Then check it on the page.",
