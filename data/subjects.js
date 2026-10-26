@@ -6,7 +6,7 @@ DR.subjects = DR.subjects || {};
 /* The money jar fills only from the wheel; this is just the currency sign it shows. */
 DR.pay = { currency: "\u00a3" };
 /* Google sign-in (Firebase project dougie-revision). This web config is public by design; the Firestore rules decide who can read or write. null keeps progress on this device only. */
-DR.firebase = {"apiKey": "AIzaSyCd6KtTv3N0TmVwR5l-5ybUisQtX3zH6bs", "authDomain": "dougie.ictevangelist.com", "projectId": "dougie-revision", "storageBucket": "dougie-revision.firebasestorage.app", "messagingSenderId": "223992817221", "appId": "1:223992817221:web:50d56a95f3fda93fbb652c"};
+DR.firebase = {"apiKey": "AIzaSyCd6KtTv3N0TmVwR5l-5ybUisQtX3zH6bs", "authDomain": "dougie-revision.firebaseapp.com", "projectId": "dougie-revision", "storageBucket": "dougie-revision.firebasestorage.app", "messagingSenderId": "223992817221", "appId": "1:223992817221:web:50d56a95f3fda93fbb652c"};
 DR.registry = [
   {
     slug: "biology",
