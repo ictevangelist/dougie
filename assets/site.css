@@ -325,3 +325,20 @@ a, button, label, summary { -webkit-tap-highlight-color: rgba(46, 204, 113, .25)
 .rung.is-now { background: #F1C40F; color: #2C3E50; border-color: #F1C40F; }
 .rung-count { font-size: var(--step--1); }
 .rung-here { margin-left: auto; font-size: var(--step--1); font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
+
+/* English practice: extracts, pick lists and writing. Right rows Emerald border and tint, wrong rows Pomegranate, each with a text label so colour isn't the only signal */
+.extract { background: var(--space); border-left: 6px solid #2980B9; border-radius: var(--radius-s); padding: var(--space-3) var(--space-4); margin: 0 0 var(--space-3); }
+.extract p { margin: 0 0 var(--space-2); }
+.extract p:last-child { margin-bottom: 0; }
+.extract hr { border: 0; border-top: 1px solid var(--line); margin: var(--space-3) 0; }
+.pick { border: 1px solid var(--line); border-radius: var(--radius-s); padding: var(--space-2) var(--space-3) var(--space-3); margin: 0 0 var(--space-3); }
+.pick legend { font-weight: 700; padding: 0 var(--space-1); }
+.pick-row { display: flex; gap: var(--space-2); align-items: flex-start; padding: 8px; border-radius: var(--radius-s); border: 2px solid transparent; cursor: pointer; min-height: var(--tap); }
+.pick-row input { width: 22px; height: 22px; flex: none; margin-top: 2px; accent-color: #2ECC71; }
+.pick-row.ok { border-color: #2ECC71; background: rgba(46, 204, 113, .15); }
+.pick-row.bad { border-color: #E74C3C; background: rgba(231, 76, 60, .15); }
+.pick-row.ok span::after { content: "  (right)"; font-weight: 700; }
+.pick-row.bad span::after { content: "  (not this one)"; font-weight: 700; }
+.write-box { width: 100%; min-height: 18em; font: inherit; line-height: 1.6; background: var(--space); color: var(--ink); border: 2px solid var(--ink-2); border-radius: var(--radius-s); padding: var(--space-3); resize: vertical; }
+.write-box:focus { outline: 3px solid var(--portal); outline-offset: 2px; }
+.wcount { font-weight: 700; margin: var(--space-1) 0 var(--space-3); }

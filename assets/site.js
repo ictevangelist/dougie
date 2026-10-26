@@ -339,10 +339,11 @@
       units.forEach(function (c) { list.push({ label: c, slug: subs[0], unit: c }); });
     } else subs.forEach(function (sl) { var r = registryItem(sl); list.push({ label: r.wheel || r.short || r.name, slug: sl }); });
     if (!list.length) return [];
+    /* a whole number of rounds, so every subject gets the same number of pockets */
     var out = [];
     while (out.length < 8) out = out.concat(list);
-    out = out.slice(0, Math.max(8, list.length));
-    out.splice(Math.ceil(out.length / 2), 0, { label: "Mix" });
+    /* Mix goes where it keeps red and black alternating: the middle for an even count, the end for an odd one */
+    if (out.length % 2) out.push({ label: "Mix" }); else out.splice(out.length / 2, 0, { label: "Mix" });
     return out;
   }
   var POCKETS = [];
@@ -624,7 +625,7 @@
       });
       var missing = sess.slots.filter(function (s) { if (s.type !== "report") return false; var x = ss.reports[s.report]; return !x || x.score === undefined || x.score === ""; }).length;
       var practice = [];
-      sess.slots.forEach(function (s, i) { if (s.type !== "practice") return; var p = (ss.practice || {})[i] || {}; practice.push(slotTitle(subj, s, idx).replace(/^Practice: /, "") + ": " + (p.ok ? "got it right" : p.shown ? "answers shown" : "not done yet")); });
+      sess.slots.forEach(function (s, i) { if (s.type !== "practice") return; var p = (ss.practice || {})[i] || {}; var ak = ((subj.activities || {})[s.activity] || {}).kind; practice.push(slotTitle(subj, s, idx).replace(/^Practice: /, "") + ": " + (ak === "write" ? (p.ok ? "done, " + words(p.text) + " words" : p.text ? "started, " + words(p.text) + " words" : "not done yet") : p.ok ? "got it right" : p.shown ? "answers shown" : "not done yet")); });
       return { n: n, c: c, scores: scores, missing: missing, practice: practice };
     }
     function completeHtml() {
@@ -768,6 +769,7 @@
     var head = '<div class="act" data-act="' + i + '">' + (a.intro ? "<p>" + esc(a.intro) + "</p>" : "") + (a.code ? '<pre class="code">' + esc(a.code) + "</pre>" : "") +
       (a.kind === "sort" || a.kind === "binary" ? '<p class="act-list">The list: <strong>' + esc(a.list.join(", ")) + "</strong>" + (a.kind === "binary" ? ". Looking for <strong>" + esc(a.target) + "</strong>" : "") + "</p>" : "");
     var foot = '<div class="btn-row"><button type="button" class="btn" data-check="' + i + '">' + (a.kind === "python" ? "Run and check" : "Check") + '</button><button type="button" class="linkbtn" data-show="' + i + '">' + (a.kind === "python" && (saved.ok || saved.shown) ? "Hide the answers" : "Show the answers") + '</button><button type="button" class="linkbtn" data-clear="' + i + '">' + (a.kind === "python" ? "Start the code again" : "Clear and try again") + '</button></div><p class="act-result" aria-live="polite">' + (saved.ok ? "Done: you got it right." : "") + "</p>";
+    if (a.kind === "select" || a.kind === "choice" || a.kind === "write") return head + textActHtml(a, i, saved) + (a.kind === "write" ? writeFoot(i, saved) : foot) + "</div>";
     if (a.kind === "python") {
       return head + "<p>" + esc(a.task) + '</p><label class="sr-only" for="code-' + i + '">Your Python code</label><textarea class="code-box" id="code-' + i + '" spellcheck="false" autocapitalize="off" autocomplete="off" rows="10">' + esc(saved.code != null ? saved.code : a.starter || "") + "</textarea>" +
         '<pre class="py-out" id="out-' + i + '" hidden></pre>' + foot + '<details class="erl"' + (saved.ok || saved.shown ? "" : " hidden") + '><summary>The same thing in OCR Exam Reference Language</summary><pre class="code">' + esc(a.erl) + "</pre>" + (a.answer ? '<p class="label">One way to write it in Python</p><pre class="code">' + esc(a.answer) + "</pre>" : "") + "</details></div>";
@@ -783,6 +785,35 @@
     });
     return head + body + "</tbody></table></div>" + foot + "</div>";
   }
+  /* English-style practice: pick the true statements, multiple-choice sets on an extract, and timed writing */
+  /* A fixed shuffle per question, so the options stay put after a reload (FNV hash into a small PRNG) */
+  function seeded(arr, seed) {
+    var h = 2166136261; for (var c = 0; c < seed.length; c++) { h ^= seed.charCodeAt(c); h = Math.imul(h, 16777619) >>> 0; }
+    function rnd() { h = (h + 0x6D2B79F5) >>> 0; var t = h; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; }
+    var a = arr.map(function (x, k) { return k; });
+    for (var k = a.length - 1; k > 0; k--) { var j = Math.floor(rnd() * (k + 1)), t = a[k]; a[k] = a[j]; a[j] = t; }
+    return a;
+  }
+  function extractHtml(a) { return a.extract ? '<div class="extract">' + a.extract.split(/\n\n/).map(function (para) { return para.trim() === "---" ? "<hr>" : "<p>" + esc(para) + "</p>"; }).join("") + "</div>" : ""; }
+  function words(t) { return (String(t || "").match(/[A-Za-z0-9\u00C0-\u017F'\u2019]+/g) || []).length; }
+  function textActHtml(a, i, saved) {
+    var v = saved.v || {};
+    if (a.kind === "select") return extractHtml(a) + '<fieldset class="pick"><legend>Pick the ' + a.answers.length + " true statements</legend>" + a.statements.map(function (st, k) {
+      return '<label class="pick-row" data-row="' + k + '"><input type="checkbox" data-pick="' + k + '"' + (v[k] ? " checked" : "") + "> <span>" + esc(st) + "</span></label>"; }).join("") + "</fieldset>";
+    if (a.kind === "choice") return extractHtml(a) + a.items.map(function (it, n) {
+      var order = seeded(it.options, a.title + n);
+      return '<fieldset class="pick" data-item="' + n + '"><legend>' + (n + 1) + ". " + esc(it.q) + "</legend>" + order.map(function (o) {
+        return '<label class="pick-row" data-opt="' + o + '"><input type="radio" name="c-' + i + "-" + n + '" value="' + o + '"' + (String(v[n]) === String(o) ? " checked" : "") + "> <span>" + esc(it.options[o]) + "</span></label>"; }).join("") + "</fieldset>";
+    }).join("");
+    var tick = saved.tick || {};
+    return '<div class="extract"><p><strong>' + esc(a.task) + "</strong></p></div>" +
+      '<details class="erl" open><summary>Plan first</summary><ul>' + a.plan.map(function (x) { return "<li>" + esc(x) + "</li>"; }).join("") + "</ul></details>" +
+      '<label class="sr-only" for="w-' + i + '">Your writing</label><textarea class="write-box" id="w-' + i + '" rows="14" spellcheck="true">' + esc(saved.text || "") + "</textarea>" +
+      '<p class="wcount" id="wc-' + i + '" aria-live="polite">' + words(saved.text) + " words. Aim for at least " + a.minWords + ".</p>" +
+      '<fieldset class="pick"><legend>Before you finish, check you have:</legend>' + a.checklist.map(function (c, k) { return '<label class="pick-row"><input type="checkbox" data-tick="' + k + '"' + (tick[k] ? " checked" : "") + "> <span>" + esc(c) + "</span></label>"; }).join("") + "</fieldset>";
+  }
+  function writeFoot(i, saved) { return '<div class="btn-row"><button type="button" class="btn" data-check="' + i + '">I\'ve finished</button></div><p class="act-result" aria-live="polite">' + (saved.ok ? "Done: " + words(saved.text) + " words." : "") + "</p>"; }
+
   /* Python runs in a worker, so a loop that never ends can be stopped */
   var py = { worker: null, ready: false, wait: [] };
   function pyRun(code, tests, cb) {
@@ -793,6 +824,43 @@
     py.worker.postMessage({ code: code, tests: tests }); py.started = true;
   }
   function bindPractice(main, slug, subj, sess, date) {
+    function textActCheck(a, i, box, res, show, clear) {
+      var rows = box.querySelectorAll(".pick-row"), right = 0, total = 0;
+      rows.forEach(function (r) { r.classList.remove("ok", "bad"); });
+      if (a.kind === "write") {
+        var t = box.querySelector(".write-box").value, n = words(t), ticks = box.querySelectorAll("[data-tick]"), all = [].every.call(ticks, function (c) { return c.checked; });
+        if (n < a.minWords) { res.textContent = n + " words so far. Keep going to at least " + a.minWords + "."; res.className = "act-result bad"; return; }
+        if (!all) { res.textContent = "Nearly there. Go back through your writing and tick off every check first."; res.className = "act-result bad"; return; }
+        save(i, { ok: true, text: t }); res.textContent = "Done: " + n + " words. Dad can read it when he signs in."; res.className = "act-result good"; return;
+      }
+      if (clear) {
+        box.querySelectorAll("input").forEach(function (x) { x.checked = false; }); save(i, { v: {} }); res.textContent = ""; res.className = "act-result"; return;
+      }
+      if (a.kind === "select") {
+        var picked = [].filter.call(box.querySelectorAll("[data-pick]"), function (c) { return c.checked; }).length;
+        if (!show && picked !== a.answers.length) { res.textContent = "Pick exactly " + a.answers.length + " statements. You've picked " + picked + "."; res.className = "act-result bad"; return; }
+        box.querySelectorAll("[data-pick]").forEach(function (c) {
+          var k = +c.getAttribute("data-pick"), want = a.answers.indexOf(k) > -1; if (show) c.checked = want;
+          var row = c.closest(".pick-row"); if (c.checked) { row.classList.add(want ? "ok" : "bad"); if (want) right++; } else if (show && want) row.classList.add("ok");
+        });
+        total = a.answers.length;
+      } else {
+        a.items.forEach(function (it, n) {
+          var fs = box.querySelector('[data-item="' + n + '"]'); total++;
+          if (show) fs.querySelector('[data-opt="' + it.answer + '"] input').checked = true;
+          var ch = fs.querySelector("input:checked"); if (!ch) return;
+          var row = ch.closest(".pick-row"), ok = +ch.value === it.answer; row.classList.add(ok ? "ok" : "bad"); if (ok) right++;
+          if (!ok) fs.querySelector('[data-opt="' + it.answer + '"]').classList.add("ok");
+        });
+      }
+      var allRight = right === total, v = {};
+      box.querySelectorAll("[data-pick]:checked").forEach(function (c) { v[c.getAttribute("data-pick")] = true; });
+      box.querySelectorAll("[data-item]").forEach(function (fs) { var ch = fs.querySelector("input:checked"); if (ch) v[fs.getAttribute("data-item")] = ch.value; });
+      res.textContent = show ? "Here are the answers, marked in green. Work out why each one is right." : allRight ? "All " + total + " right. Nice work." : right + " of " + total + " right. The green ones show the right answers you missed.";
+      res.className = "act-result " + (show ? "" : allRight ? "good" : "bad");
+      var prev = ((store.read(slug).sessions || {})[date] || {}).practice || {};
+      save(i, show ? { v: v, shown: true } : { v: v, ok: allRight || (prev[i] || {}).ok || false });
+    }
     function save(i, patch) { var d = store.read(slug), ss = store.session(d, date); ss.practice = ss.practice || {}; ss.practice[i] = Object.assign(ss.practice[i] || {}, patch); store.write(slug, d); }
     function vals(box) { var o = {}; [].forEach.call(box.querySelectorAll("[data-cell]"), function (c) { o[c.getAttribute("data-cell")] = c.value; }); return o; }
     main.addEventListener("input", function (ev) {
@@ -800,6 +868,15 @@
       var i = +box.getAttribute("data-act");
       if (ev.target.classList.contains("cell")) { ev.target.classList.remove("ok", "bad"); save(i, { v: vals(box) }); }
       if (ev.target.classList.contains("code-box")) save(i, { code: ev.target.value });
+      if (ev.target.classList.contains("write-box")) { save(i, { text: ev.target.value }); var wc = box.querySelector(".wcount"), aw = subj.activities[sess.slots[i].activity]; wc.textContent = words(ev.target.value) + " words. Aim for at least " + aw.minWords + "."; }
+    });
+    main.addEventListener("change", function (ev) {
+      var box = ev.target.closest(".act"); if (!box) return;
+      var i = +box.getAttribute("data-act"), d = store.read(slug), cur = ((store.session(d, date).practice || {})[i]) || {};
+      if (ev.target.hasAttribute("data-pick")) { var v = Object.assign({}, cur.v || {}); if (ev.target.checked) v[ev.target.getAttribute("data-pick")] = true; else delete v[ev.target.getAttribute("data-pick")]; save(i, { v: v }); }
+      else if (ev.target.type === "radio" && ev.target.name.indexOf("c-") === 0) { var w = Object.assign({}, cur.v || {}); w[ev.target.closest("[data-item]").getAttribute("data-item")] = ev.target.value; save(i, { v: w }); }
+      else if (ev.target.hasAttribute("data-tick")) { var t = Object.assign({}, cur.tick || {}); if (ev.target.checked) t[ev.target.getAttribute("data-tick")] = true; else delete t[ev.target.getAttribute("data-tick")]; save(i, { tick: t }); }
+      box.querySelectorAll(".pick-row").forEach(function (r) { r.classList.remove("ok", "bad"); });
     });
     main.addEventListener("keydown", function (ev) {
       if (ev.key !== "Tab" || !ev.target.classList.contains("code-box") || ev.shiftKey) return;
@@ -810,6 +887,7 @@
       var b = ev.target.closest("[data-check],[data-show],[data-clear]"); if (!b) return;
       var i = +(b.getAttribute("data-check") || b.getAttribute("data-show") || b.getAttribute("data-clear")), sl = sess.slots[i], a = subj.activities[sl.activity], box = main.querySelector('[data-act="' + i + '"]'), res = box.querySelector(".act-result");
       var show = b.hasAttribute("data-show");
+      if (a.kind === "select" || a.kind === "choice" || a.kind === "write") { textActCheck(a, i, box, res, b.hasAttribute("data-show"), b.hasAttribute("data-clear")); return; }
       if (b.hasAttribute("data-clear")) {
         if (a.kind === "python") { var t = box.querySelector(".code-box"); t.value = a.starter || ""; box.querySelector(".py-out").hidden = true; save(i, { code: t.value }); t.focus(); }
         else { [].forEach.call(box.querySelectorAll("[data-cell]"), function (c) { c.value = ""; c.classList.remove("ok", "bad"); }); save(i, { v: {} }); box.querySelector("[data-cell]").focus(); }

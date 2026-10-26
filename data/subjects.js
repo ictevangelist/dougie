@@ -21,10 +21,11 @@ DR.registry = [
     slug: "english-language",
     name: "English Language",
     short: "English",
+    wheel: "Eng",
     accent: "#2980B9",
     tint: "#E1EDF5",
-    status: "soon",
-    blurb: "Coming soon"
+    status: "live",
+    blurb: "AQA GCSE English Language (8700), Paper 1 and Paper 2"
   },
   {
     slug: "computer-science",
