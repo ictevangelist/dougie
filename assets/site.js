@@ -344,28 +344,53 @@
       '<ol class="rungs">' + out + '</ol><p class="muted">Every ' + STEP + " right answers, each one is worth 2\u00bdp more. A wrong answer doesn't cost you anything.</p></div>";
   }
 
-  /* Maths has a reward jar instead of money: a reward for every third filled. These are the right-answer counts that fill each third. */
-  function rewardMarks(n) { return [1, 2, 3].map(function (k) { return Math.round(n * k / 3); }); }
-  function cap(t) { return t.charAt(0).toUpperCase() + t.slice(1); }
+  /* Maths has a reward jar instead of money: a reward every "every" right answers (100). These are the counts that win one. */
+  function rewardMarks(n) { var out = []; for (var m = JAR.rewards.every; m <= n; m += JAR.rewards.every) out.push(m); return out; }
+  function cap(t) { t = String(t || ""); return t.charAt(0).toUpperCase() + t.slice(1); }
+  /* Lucky dip entries are [prize, weight]: the dearer treats have a low weight, so they come up less often */
+  function dipChance(w) { return w <= 1 ? "rare" : w <= 2 ? "not so common" : "common"; }
+  /* The lucky dip wheel, like the Gran Turismo 7 roulette: each spin shows four prizes, each slice sized by its chance (so the dearer ones are thin), and lands on the one already drawn. Labels on the left half are flipped so none read upside down. */
+  var DIP_COLOURS = [["#C0392B", "#FFFFFF"], ["#F1C40F", "#2C3E50"], ["#8E44AD", "#FFFFFF"], ["#1ABC9C", "#2C3E50"]];
+  function dipFour(dip, w) {
+    var rarest = dip.reduce(function (m, d, i) { return d[1] < dip[m][1] ? i : m; }, 0);
+    var others = shuffle(dip.map(function (d, i) { return i; }).filter(function (i) { return i !== w && i !== rarest; }));
+    return shuffle([w].concat(w === rarest ? others.slice(0, 3) : [rarest].concat(others.slice(0, 2))));
+  }
+  function dipSvg(dip, four) {
+    var total = four.reduce(function (t, i) { return t + dip[i][1]; }, 0), at = 0, out = "", spans = {};
+    four.forEach(function (idx, i) {
+      var size = 360 * dip[idx][1] / total, c = DIP_COLOURS[i], R = 92;
+      var a0 = (at - 90) * Math.PI / 180, a1 = (at + size - 90) * Math.PI / 180;
+      var p = function (a) { return (100 + R * Math.cos(a)).toFixed(2) + " " + (100 + R * Math.sin(a)).toFixed(2); };
+      out += '<path d="M100 100 L' + p(a0) + " A" + R + " " + R + " 0 " + (size > 180 ? 1 : 0) + " 1 " + p(a1) + 'z" fill="' + c[0] + '" stroke="#2C3E50" stroke-width="1.5"/>' +
+        '<g transform="rotate(' + (at + size / 2) + ' 100 100)"><text x="100" y="45" transform="rotate(' + (at + size / 2 > 180 ? 90 : -90) + ' 100 45)" class="dip-label" fill="' + c[1] + '">' + esc(dip[idx][2] || dip[idx][0]) + "</text></g>";
+      spans[idx] = [at, size]; at += size;
+    });
+    return { spans: spans, svg: '<svg viewBox="0 0 200 200" aria-hidden="true" focusable="false"><circle cx="100" cy="100" r="97" class="wheel-rim"/><g class="dip-spin">' + out + '<circle cx="100" cy="100" r="16" class="wheel-hub"/></g><path d="M91 0 L109 0 L100 20 z" class="wheel-pointer"/></svg>' };
+  }
+  function dipDraw(dip) {
+    var total = dip.reduce(function (t, d) { return t + d[1]; }, 0), r = Math.random() * total;
+    for (var i = 0; i < dip.length; i++) { r -= dip[i][1]; if (r < 0) return i; }
+    return dip.length - 1;
+  }
   function rewardsHtml(q, banked, n) {
     var rw = JAR.rewards, marks = rewardMarks(n), got = q.rewards || {}, next = marks.filter(function (m) { return banked < m; })[0], from = next ? (marks[marks.indexOf(next) - 1] || 0) : 0;
-    var dips = rw.dip.slice(0, -1).join(", ") + " or " + rw.dip[rw.dip.length - 1];
     var rungs = marks.map(function (m, i) {
       var k = i + 1, c = got[k];
-      return '<li class="rung' + (banked >= m ? " is-past" : next === m ? " is-now" : "") + '"><span class="rung-band">' + (k === 3 ? "Full jar" : k + "/3 full") + ": " + m + ' right</span><span class="rung-prize">' + (c ? esc(cap(c.prize)) : banked >= m ? "Ready to pick" : "Reward " + k) + "</span>" + (next === m ? '<span class="rung-here">Next</span>' : "") + "</li>";
+      return '<li class="rung' + (banked >= m ? " is-past" : next === m ? " is-now" : "") + '"><span class="rung-band">' + m + ' right</span><span class="rung-prize">' + (c ? esc(cap(c.prize)) : banked >= m ? "Ready to pick" : "Reward " + k) + "</span>" + (next === m ? '<span class="rung-here">Next</span>' : "") + "</li>";
     }).join("");
     var claims = marks.map(function (m, i) {
       var k = i + 1; if (banked < m || got[k]) return "";
-      return '<div class="stuck reward-claim"><p class="stuck-h">You\'ve filled ' + (k === 3 ? "the whole jar" : k + "/3 of the jar") + "! Pick your reward</p>" +
-        '<div class="btn-row"><button type="button" class="btn btn-big" data-claim="' + k + '" data-pick="ps">' + esc(cap(rw.ps)) + '</button><button type="button" class="btn btn-big" data-claim="' + k + '" data-pick="dip">Lucky dip</button></div>' +
-        "<p>The lucky dip is one of: " + esc(dips) + ". Once you've picked, it's yours: no swapping.</p></div>";
+      return '<div class="stuck reward-claim"><p class="stuck-h">You\'ve got ' + m + " right! Pick your reward</p>" +
+        '<div class="btn-row"><button type="button" class="btn btn-big" data-claim="' + k + '" data-pick="fixed">' + esc(cap(rw.fixed)) + '</button><button type="button" class="btn btn-big" data-claim="' + k + '" data-pick="dip">Lucky dip</button></div>' +
+        "<p>Once you've picked, it's yours: no swapping.</p></div>";
     }).join("");
     var won = Object.keys(got).length ? '<div class="stuck send-dad"><p class="stuck-h">Your rewards</p><ul>' + Object.keys(got).sort().map(function (k) { return "<li>Reward " + k + ": <strong>" + esc(cap(got[k].prize)) + "</strong>" + (got[k].pick === "dip" ? " (lucky dip)" : "") + "</li>"; }).join("") + '</ul><p>Tell Dad so he can sort it out.</p><button type="button" class="btn btn-big" data-tell="1">Tell Dad about my rewards</button><p class="send-note" aria-live="polite"></p></div>' : "";
     return '<div><h2 id="jar-h">' + JAR.title + '</h2><p class="jar-total">' + banked + "<small>of " + n + " questions banked</small></p>" + (JAR.note ? "<p><strong>" + JAR.note + "</strong></p>" : "") +
-      "<p>Instead of money, this jar is full of rewards. It fills from " + JAR.wheel + ": every question you get right for the first time goes in. Fill a third of the jar and you win a reward. A wrong answer doesn't cost you anything.</p>" +
-      "<p>For each reward you choose: " + esc(rw.ps) + ", or a lucky dip. The lucky dip is one of: " + esc(dips) + ".</p>" +
+      "<p>Instead of money, this jar is full of rewards. It fills from " + JAR.wheel + ": every question you get right for the first time goes in. Every " + rw.every + " questions you get right, you win a reward. A wrong answer doesn't cost you anything.</p>" +
+      "<p>For each reward you choose: " + esc(rw.fixed) + ", or a lucky dip. The lucky dip is one of these:</p><ul class=\"dip-list\">" + rw.dip.map(function (d) { return "<li>" + esc(cap(d[0])) + " <span class=\"muted\">(" + dipChance(d[1]) + ")</span></li>"; }).join("") + "</ul>" +
       claims + won +
-      '<div class="ladder"><h3>Three rewards to win</h3><p class="ladder-next">' + (next ? "Get <strong>" + (next - banked) + " more right</strong> for your next reward." : "The jar's full. Brilliant work.") + "</p>" +
+      '<div class="ladder"><h3>' + marks.length + ' rewards to win</h3><p class="ladder-next">' + (next ? "Get <strong>" + (next - banked) + " more right</strong> for your next reward." : "That's every reward won. Brilliant work.") + "</p>" +
       (next ? '<div class="ladder-bar" role="progressbar" aria-label="Right answers towards the next reward" aria-valuemin="0" aria-valuemax="' + (next - from) + '" aria-valuenow="' + (banked - from) + '"><i style="width:' + ((banked - from) / (next - from) * 100).toFixed(1) + '%"></i></div>' : "") +
       '<ol class="rungs">' + rungs + "</ol></div></div>";
   }
@@ -376,9 +401,9 @@
     var maxP = 0; for (var m = 0; m < n; m++) maxP += prize(m);
     var banked = Object.keys(q.banked).length;
     var totalP = Math.max(0, q.pence), f = Math.min(1, rw ? banked / n : totalP / maxP), top = 40, bottom = 250, h = (bottom - top) * f, ticks = "";
-    /* money: a mark every £5, or every £10 once that would crowd the jar. rewards: a mark at each third */
+    /* money: a mark every £5, or every £10 once that would crowd the jar. rewards: a mark at each reward */
     var tickStep = maxP > 6500 ? 1000 : 500, tickAt = [];
-    if (rw) tickAt = [[1 / 3, "1/3"], [2 / 3, "2/3"], [1, "Full"]];
+    if (rw) tickAt = rewardMarks(n).map(function (m) { return [m / n, String(m)]; });
     else for (var t = tickStep; t <= maxP; t += tickStep) tickAt.push([t / maxP, pounds(t)]);
     tickAt.forEach(function (tk) { var y = bottom - (bottom - top) * tk[0]; ticks += '<line x1="150" x2="164" y1="' + y.toFixed(1) + '" y2="' + y.toFixed(1) + '" class="jar-tick"/><text x="170" y="' + (y + 5).toFixed(1) + '" class="jar-label">' + tk[1] + "</text>"; });
     return '<section class="card jar section' + (still ? " still" : "") + '" style="--accent-dark:#F1C40F" aria-labelledby="jar-h"><svg class="jar-svg" viewBox="0 0 230 270" role="img" aria-label="' + (rw ? "Reward jar: " + banked + " of " + n + " questions banked" : "Money jar: " + pounds(totalP) + " in the jar, " + pounds(maxP) + " when full") + '">' +
@@ -491,7 +516,7 @@
           st.banked[q[1]] = true; st.pence += win;
           if (JAR.rewards) {
             var mk = rewardMarks(bank.length), hit = mk.indexOf(before + 1), nx = mk.filter(function (m) { return m > before + 1; })[0];
-            msg = "Right! That's " + (before + 1) + " in the jar." + (hit >= 0 ? " You've filled " + (hit === 2 ? "the whole jar" : (hit + 1) + "/3 of the jar") + ": close this and pick your reward under the jar!" : " " + (nx - before - 1) + " more to your next reward.");
+            msg = "Right! That's " + (before + 1) + " in the jar." + (hit >= 0 ? " That's a reward: close this and pick it under the jar!" : nx ? " " + (nx - before - 1) + " more to your next reward." : "");
           } else {
             msg = "Right! " + pence(win) + " goes in the jar.";
             if ((before + 1) % STEP === 0) msg += " That's " + (before + 1) + " right, so every right answer is now worth " + pence(prize(before + 1)) + ".";
@@ -1113,7 +1138,7 @@
       }).join("");
       frame(slug, [{ href: BASE + "/", name: "Hub" }, { name: subj.name }],
         '<div class="hero"><div><h1>' + esc(subj.heading) + '</h1><p class="lede">' + esc(subj.paper) + "</p></div>" + wheelHtml("Dougie's Maths Wheel of Fortune") + "</div>" +
-        '<dialog class="quiz" id="wheel-q" aria-labelledby="wheel-q-h"></dialog>' +
+        '<dialog class="quiz" id="wheel-q" aria-labelledby="wheel-q-h"></dialog><dialog class="quiz" id="dip-q" aria-labelledby="dip-h"></dialog>' +
         '<div class="panel section"><h2>How the maths wheel works</h2>' +
         "<p>Spin the wheel and it lands on a topic: Number, Algebra, Ratio, Geometry, Probability or Statistics. Green is Mix, which can be any topic.</p>" +
         "<p>Most questions want you to work the answer out on paper and type it in, like the real exam. Some give you four answers to pick from.</p>" +
@@ -1130,10 +1155,25 @@
         if (c) {
           var k = c.getAttribute("data-claim"), pick = c.getAttribute("data-pick"), dip = subj.rewards.dip;
           st.rewards = st.rewards || {}; if (st.rewards[k]) return;
-          st.rewards[k] = { pick: pick, prize: pick === "ps" ? subj.rewards.ps : dip[Math.floor(Math.random() * dip.length)], at: Date.now() };
+          /* the prize is drawn and saved before the wheel spins, so closing the page can't re-roll it */
+          var w = pick === "dip" ? dipDraw(dip) : -1;
+          st.rewards[k] = { pick: pick, prize: pick === "fixed" ? subj.rewards.fixed : dip[w][0], at: Date.now() };
           store.write(JAR.key, st);
-          document.querySelector(".jar").outerHTML = jarHtml(true);
-          var tb = document.querySelector("[data-tell]"); if (tb) tb.focus();
+          var done = function () { document.querySelector(".jar").outerHTML = jarHtml(true); var tb = document.querySelector("[data-tell]"); if (tb) tb.focus(); };
+          if (w < 0) return done();
+          var dd = document.getElementById("dip-q"), still = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+          var four = dipFour(dip, w), ds = dipSvg(dip, four);
+          dd.innerHTML = '<p class="kicker">Reward ' + k + '</p><h2 id="dip-h">Lucky dip</h2><p class="dip-four">On the wheel: ' + four.map(function (i) { return esc(cap(dip[i][0])); }).join(", ") + '</p><div class="dip-wheel">' + ds.svg + '</div><p class="quiz-result" aria-live="polite"></p><div class="btn-row"><button type="button" class="btn" data-dip-close hidden>Brilliant</button></div>';
+          dd.onclose = done;
+          dd.onclick = function (e2) { if (e2.target.closest("[data-dip-close]")) dd.close(); };
+          dd.showModal();
+          var sw = ds.spans[w], turn = 360 * 7 + 360 - (sw[0] + sw[1] / 2) + (Math.random() - 0.5) * sw[1] * 0.84, sp = dd.querySelector(".dip-spin");
+          if (still) sp.style.transition = "none";
+          requestAnimationFrame(function () { requestAnimationFrame(function () { sp.style.transform = "rotate(" + turn + "deg)"; }); });
+          setTimeout(function () {
+            var res = dd.querySelector(".quiz-result"); res.textContent = "You won: " + cap(dip[w][0]) + "!"; res.className = "quiz-result good";
+            var cb = dd.querySelector("[data-dip-close]"); cb.hidden = false; cb.focus();
+          }, still ? 100 : 6600);
           return;
         }
         if (tell) {
