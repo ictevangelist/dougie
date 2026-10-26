@@ -879,7 +879,8 @@
   /* Practice papers: typed answers that lock when handed in, then go to Dad for marking */
   function paperLinks(subj, sess) {
     var a = (subj.activities || {})[(sess.slots[0] || {}).activity] || {};
-    return a.pdf ? '<div class="section nb-row no-print"><a class="btn btn-big" href="' + BASE + esc(a.pdf) + '" target="_blank" rel="noopener">Open the question paper (PDF)</a></div>' : "";
+    return a.pdf ? '<div class="section nb-row no-print btn-row"><a class="btn btn-big" href="' + BASE + esc(a.pdf) + '" target="_blank" rel="noopener">Open the question paper (PDF)</a>' +
+      (a.markscheme ? '<a class="btn btn-big btn-ghost" href="' + BASE + esc(a.markscheme) + '" target="_blank" rel="noopener">Open the mark scheme (PDF)</a>' : "") + "</div>" : "";
   }
   function paperHtml(a, i, saved) {
     var v = saved.v || {}, off = saved.submitted ? " disabled" : "", out = "";
@@ -895,8 +896,7 @@
   }
   function paperFoot(i, saved, a) {
     if (!saved.submitted) return '<div class="btn-row"><button type="button" class="btn btn-big" data-check="' + i + '">Hand it in</button></div><p class="act-result" aria-live="polite">Once you hand it in, you can\'t change your answers.</p>';
-    return '<div class="stuck send-dad"><p class="stuck-h">Handed in. Now send your answers to Dad</p><p>He\'ll get them marked and tell you how you did.</p><button type="button" class="btn btn-big" data-send-paper="' + i + '">Send my answers to Dad</button><p class="send-note" aria-live="polite"></p></div>' +
-      (a.markscheme ? '<p class="pp-ms">Want to see how you did? <a class="btn btn-ghost" href="' + BASE + esc(a.markscheme) + '" target="_blank" rel="noopener">Open the mark scheme (PDF)</a></p>' : "");
+    return '<div class="stuck send-dad"><p class="stuck-h">Handed in. Now send your answers to Dad</p><p>He\'ll get them marked and tell you how you did.</p><button type="button" class="btn btn-big" data-send-paper="' + i + '">Send my answers to Dad</button><p class="send-note" aria-live="polite"></p></div>';
   }
   function paperText(a, saved, subjName) {
     var v = saved.v || {};
