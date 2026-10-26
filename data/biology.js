@@ -206,7 +206,7 @@ DR.subjects.biology = {
     },
     {
       date: "2026-10-26",
-      title: "Biology Revision Session",
+      title: "Revision session: Paper 1 topics",
       start: "09:00",
       end: "12:35",
       breaks: [{ start: "11:15", end: "11:35" }],

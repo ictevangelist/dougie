@@ -356,8 +356,8 @@ DR.subjects["computer-science"] = {
     {
       "id": "paper-1",
       "flexible": true,
-      "title": "Paper 1: Computer systems",
-      "short": "Paper 1",
+      "title": "Revision session 1: Paper 1 topics (Computer systems)",
+      "short": "Paper 1 revision",
       "notebook": "https://notebook.google.com/notebook/5c13c207-183f-45f7-8d85-4fce2cad7c43",
       "slots": [
         {
@@ -450,8 +450,8 @@ DR.subjects["computer-science"] = {
     {
       "id": "paper-2",
       "flexible": true,
-      "title": "Paper 2: Algorithms and programming",
-      "short": "Paper 2",
+      "title": "Revision session 2: Paper 2 topics (Algorithms and programming)",
+      "short": "Paper 2 revision",
       "notebook": "https://notebook.google.com/notebook/eb8d20ec-160f-4f8a-8c55-f23fdd669893",
       "slots": [
         {

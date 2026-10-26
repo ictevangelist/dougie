@@ -205,7 +205,7 @@ main { padding: var(--space-5) 0 var(--space-7); }
 .bar { height: 12px; border-radius: var(--pill); background: var(--panel); border: 1px solid var(--line); overflow: hidden; }
 .bar i { display: block; height: 100%; width: 0; background: linear-gradient(90deg, var(--portal-3), var(--portal)); box-shadow: 0 0 10px rgba(46, 204, 113, .7); transition: width .3s ease; }
 .progress p { margin: var(--space-1) 0 0; font-size: var(--step--1); font-weight: 600; }
-.timeline { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-3); }
+.timeline { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--space-3); }
 .slot-top { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-2) var(--space-3); margin-bottom: var(--space-2); }
 .slot-time { font-weight: 700; font-variant-numeric: tabular-nums; }
 .slot-dur { font-size: var(--step--1); color: var(--ink-2); }
@@ -354,7 +354,7 @@ a, button, label, summary { -webkit-tap-highlight-color: rgba(46, 204, 113, .25)
 .part-tick input { width: 24px; height: 24px; accent-color: #2ECC71; flex: none; }
 .part-score { display: flex; align-items: center; gap: var(--space-1); flex-wrap: wrap; }
 .part-score input { width: 4.5em; min-height: 40px; font: inherit; background: var(--panel); color: var(--ink); border: 2px solid var(--ink-2); border-radius: var(--radius-s); padding: 4px 8px; }
-.part-note { flex: 1 1 100%; min-height: 40px; font: inherit; background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: var(--radius-s); padding: 6px 10px; }
+.part-note { flex: 1 1 100%; min-width: 0; width: 100%; box-sizing: border-box; min-height: 40px; font: inherit; background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: var(--radius-s); padding: 6px 10px; }
 .part-note::placeholder { color: var(--ink-2); }
 .part-msg { flex: 1 1 100%; margin: 0; font-weight: 700; color: #F1C40F; }
 .part-msg:empty { display: none; }

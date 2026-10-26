@@ -467,8 +467,9 @@
       }).join("");
       frame(slug, [{ href: BASE + "/", name: "Hub" }, { name: subj.name }],
         '<div class="hero"><div><h1>' + esc(subj.heading) + '</h1><p class="lede">' + esc(subj.paper) + '</p>' + (subj.notebook ? '<p><a class="btn btn-big" href="' + esc(subj.notebook) + '" target="_blank" rel="noopener">Open the ' + esc(subj.name) + " Notebook</a></p>" : (subj.sessions || []).filter(function (x) { return x.notebook; }).map(function (x) { return '<a class="btn btn-big" href="' + esc(x.notebook) + '" target="_blank" rel="noopener">Open the ' + esc(x.short) + " Notebook</a>"; }).join(" ")) + "</div></div>" +
-        '<section class="section" aria-labelledby="sessions-h"><h2 id="sessions-h">Sessions</h2><ul class="sessions-list">' + sessions + "</ul></section>" +
-        '<div class="section"><h2>Your units</h2><p>Rate each report once you\'ve worked on it, and add your latest quiz score. Ratings from your sessions land here too, so this is the honest picture of where you are.</p></div>' + units, subj.name);
+        '<div class="panel section"><h2>How this page works</h2><p><strong>1. Your revision sessions</strong> are the plan. Open one and work through it in order. It tells you which report to open in the notebook and what to do next.</p><p><strong>2. The notebook</strong> holds the reports. Each report has two quizzes, two sets of flashcards and the exam mistakes to avoid.</p><p><strong>3. Your progress on every report</strong> is the list further down. It isn\'t extra work: it\'s your record of how confident you feel and your latest quiz score.</p><p>Practice exam papers are separate. You\'ll find them in <a href="' + BASE + '/past-papers/">Past paper practice</a>.</p></div>' +
+        '<section class="section" aria-labelledby="sessions-h"><h2 id="sessions-h">Your revision sessions</h2><ul class="sessions-list">' + sessions + "</ul></section>" +
+        '<div class="section"><h2>Your progress on every report</h2><p>This isn\'t extra work. When you finish a report in a session, your rating lands here by itself. You can also rate a report yourself and add your latest quiz score.</p></div>' + units, subj.name);
       var main = document.getElementById("main");
       main.addEventListener("change", function (ev) {
         var li = ev.target.closest("[data-report]"); if (!li) return;

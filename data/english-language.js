@@ -657,8 +657,8 @@ DR.subjects["english-language"] = {
     {
       "id": "paper-1",
       "flexible": true,
-      "title": "Paper 1: Explorations in creative reading and writing",
-      "short": "Paper 1",
+      "title": "Revision session 1: Paper 1 topics (Explorations in creative reading and writing)",
+      "short": "Paper 1 revision",
       "notebook": "https://notebook.google.com/notebook/08da1762-6282-437d-b95e-d8a2b197a881",
       "slots": [
         {
@@ -745,8 +745,8 @@ DR.subjects["english-language"] = {
     {
       "id": "paper-2",
       "flexible": true,
-      "title": "Paper 2: Writers' viewpoints and perspectives",
-      "short": "Paper 2",
+      "title": "Revision session 2: Paper 2 topics (Writers' viewpoints and perspectives)",
+      "short": "Paper 2 revision",
       "notebook": "https://notebook.google.com/notebook/581c95ce-10b8-447c-8cd5-1f3ebead9799",
       "slots": [
         {
