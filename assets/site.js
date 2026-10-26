@@ -33,15 +33,46 @@
   function registryItem(slug) { return (DR.registry || []).filter(function (r) { return r.slug === slug; })[0]; }
 
   /* ---------- Google sign-in and the shared record (Firebase), switched on by DR.firebase in data/subjects.js ----------
-     Every key is kept in localStorage as well, so the site keeps working offline. On sign-in the newer copy of each key wins,
-     by its _at time. Firestore rules let only Dougie's and Dad's Google accounts read or write progress/dougie. */
+     Every key is kept in localStorage as well, so the site keeps working offline. On sign-in, and on every save, this device's copy
+     and the cloud's copy are joined (mergeData), so work done on one device is never wiped by an older copy on another.
+     Firestore rules let only the family's Google accounts read or write progress/dougie. */
+  /* Joining two copies of the same record: anything either copy has is kept. Where both have the same thing,
+     a record with its own "at" time (a report rating, a reward) keeps the newer one, a handed-in paper beats one that isn't,
+     and anything else comes from the copy saved last. */
+  function plain(x) { return !!x && typeof x === "object" && !Array.isArray(x); }
+  function join(a, b, aNewer) {
+    if (a === undefined) return b;
+    if (b === undefined) return a;
+    if (!plain(a) || !plain(b)) return aNewer ? a : b;
+    if (typeof a.at === "number" || typeof b.at === "number") return (a.at || 0) >= (b.at || 0) ? a : b;
+    if (!!a.submitted !== !!b.submitted) return a.submitted ? a : b;
+    var o = {};
+    Object.keys(a).concat(Object.keys(b)).forEach(function (k) { if (!(k in o)) o[k] = join(a[k], b[k], aNewer); });
+    return o;
+  }
+  function mergeData(local, remote) {
+    if (!remote) return local;
+    var o = join(local, remote, (local._at || 0) >= (remote._at || 0));
+    o._at = Math.max(local._at || 0, remote._at || 0);
+    return o;
+  }
   var SDK = "https://www.gstatic.com/firebasejs/10.12.2/";
   var cloud = DR.cloud = {
     on: false, user: null, doc: null, timers: {},
     push: function (subject, data) {
       if (!cloud.on || !cloud.doc) return;
       clearTimeout(cloud.timers[subject]);
-      cloud.timers[subject] = setTimeout(function () { var o = {}; o[subject] = JSON.stringify(data); cloud.doc.set(o, { merge: true }).catch(function () {}); }, 600);
+      /* read the cloud copy, join it with this device's, and write the result back, in one transaction */
+      cloud.timers[subject] = setTimeout(function () {
+        cloud.doc.firestore.runTransaction(function (t) {
+          return t.get(cloud.doc).then(function (snap) {
+            var r = null; try { r = snap.exists && snap.data()[subject] ? JSON.parse(snap.data()[subject]) : null; } catch (e) {}
+            var m = mergeData(store.read(subject), r), o = {};
+            try { localStorage.setItem(store.key(subject), JSON.stringify(m)); } catch (e) {}
+            o[subject] = JSON.stringify(m); t.set(cloud.doc, o, { merge: true });
+          });
+        }).catch(function () {});
+      }, 600);
     },
     load: function (src, cb) { var sc = document.createElement("script"); sc.src = SDK + src; sc.onload = function () { cb(); }; sc.onerror = function () { cb(new Error("sdk")); }; document.head.appendChild(sc); },
     start: function (done) {
@@ -76,8 +107,10 @@
       Object.keys(keys).forEach(function (k) {
         var r = null, l = store.read(k);
         try { r = remote[k] ? JSON.parse(remote[k]) : null; } catch (e) {}
-        if (r && (r._at || 0) > (l._at || 0)) { try { localStorage.setItem(store.key(k), JSON.stringify(r)); } catch (e) {} }
-        else if (l._at && (!r || l._at > (r._at || 0))) { var o = {}; o[k] = JSON.stringify(l); cloud.doc.set(o, { merge: true }).catch(function () {}); }
+        var m = mergeData(l, r), js = JSON.stringify(m);
+        if (!m._at) return;
+        try { localStorage.setItem(store.key(k), js); } catch (e) {}
+        if (js !== remote[k]) { var o = {}; o[k] = js; cloud.doc.set(o, { merge: true }).catch(function () {}); }
       });
     },
     gate: function (msg) {
@@ -311,25 +344,52 @@
       '<ol class="rungs">' + out + '</ol><p class="muted">Every ' + STEP + " right answers, each one is worth 2\u00bdp more. A wrong answer doesn't cost you anything.</p></div>";
   }
 
+  /* Maths has a reward jar instead of money: a reward for every third filled. These are the right-answer counts that fill each third. */
+  function rewardMarks(n) { return [1, 2, 3].map(function (k) { return Math.round(n * k / 3); }); }
+  function cap(t) { return t.charAt(0).toUpperCase() + t.slice(1); }
+  function rewardsHtml(q, banked, n) {
+    var rw = JAR.rewards, marks = rewardMarks(n), got = q.rewards || {}, next = marks.filter(function (m) { return banked < m; })[0], from = next ? (marks[marks.indexOf(next) - 1] || 0) : 0;
+    var dips = rw.dip.slice(0, -1).join(", ") + " or " + rw.dip[rw.dip.length - 1];
+    var rungs = marks.map(function (m, i) {
+      var k = i + 1, c = got[k];
+      return '<li class="rung' + (banked >= m ? " is-past" : next === m ? " is-now" : "") + '"><span class="rung-band">' + (k === 3 ? "Full jar" : k + "/3 full") + ": " + m + ' right</span><span class="rung-prize">' + (c ? esc(cap(c.prize)) : banked >= m ? "Ready to pick" : "Reward " + k) + "</span>" + (next === m ? '<span class="rung-here">Next</span>' : "") + "</li>";
+    }).join("");
+    var claims = marks.map(function (m, i) {
+      var k = i + 1; if (banked < m || got[k]) return "";
+      return '<div class="stuck reward-claim"><p class="stuck-h">You\'ve filled ' + (k === 3 ? "the whole jar" : k + "/3 of the jar") + "! Pick your reward</p>" +
+        '<div class="btn-row"><button type="button" class="btn btn-big" data-claim="' + k + '" data-pick="ps">' + esc(cap(rw.ps)) + '</button><button type="button" class="btn btn-big" data-claim="' + k + '" data-pick="dip">Lucky dip</button></div>' +
+        "<p>The lucky dip is one of: " + esc(dips) + ". Once you've picked, it's yours: no swapping.</p></div>";
+    }).join("");
+    var won = Object.keys(got).length ? '<div class="stuck send-dad"><p class="stuck-h">Your rewards</p><ul>' + Object.keys(got).sort().map(function (k) { return "<li>Reward " + k + ": <strong>" + esc(cap(got[k].prize)) + "</strong>" + (got[k].pick === "dip" ? " (lucky dip)" : "") + "</li>"; }).join("") + '</ul><p>Tell Dad so he can sort it out.</p><button type="button" class="btn btn-big" data-tell="1">Tell Dad about my rewards</button><p class="send-note" aria-live="polite"></p></div>' : "";
+    return '<div><h2 id="jar-h">' + JAR.title + '</h2><p class="jar-total">' + banked + "<small>of " + n + " questions banked</small></p>" + (JAR.note ? "<p><strong>" + JAR.note + "</strong></p>" : "") +
+      "<p>Instead of money, this jar is full of rewards. It fills from " + JAR.wheel + ": every question you get right for the first time goes in. Fill a third of the jar and you win a reward. A wrong answer doesn't cost you anything.</p>" +
+      "<p>For each reward you choose: " + esc(rw.ps) + ", or a lucky dip. The lucky dip is one of: " + esc(dips) + ".</p>" +
+      claims + won +
+      '<div class="ladder"><h3>Three rewards to win</h3><p class="ladder-next">' + (next ? "Get <strong>" + (next - banked) + " more right</strong> for your next reward." : "The jar's full. Brilliant work.") + "</p>" +
+      (next ? '<div class="ladder-bar" role="progressbar" aria-label="Right answers towards the next reward" aria-valuemin="0" aria-valuemax="' + (next - from) + '" aria-valuenow="' + (banked - from) + '"><i style="width:' + ((banked - from) / (next - from) * 100).toFixed(1) + '%"></i></div>' : "") +
+      '<ol class="rungs">' + rungs + "</ol></div></div>";
+  }
   function jarHtml(still) {
-    var q = quizStore(), n = 0;
+    var q = quizStore(), n = 0, rw = JAR.rewards;
     JAR.slugs.forEach(function (k) { n += ((DR.subjects[k] || {}).quiz || []).length; });
     if (!n) return "";
     var maxP = 0; for (var m = 0; m < n; m++) maxP += prize(m);
-    var totalP = Math.max(0, q.pence), f = Math.min(1, totalP / maxP), top = 40, bottom = 250, h = (bottom - top) * f, ticks = "";
-    /* a mark every £5, or every £10 once that would crowd the jar */
-    var tickStep = maxP > 6500 ? 1000 : 500;
-    for (var t = tickStep; t <= maxP; t += tickStep) { var y = bottom - (bottom - top) * t / maxP; ticks += '<line x1="150" x2="164" y1="' + y.toFixed(1) + '" y2="' + y.toFixed(1) + '" class="jar-tick"/><text x="170" y="' + (y + 5).toFixed(1) + '" class="jar-label">' + pounds(t) + "</text>"; }
     var banked = Object.keys(q.banked).length;
-    return '<section class="card jar section' + (still ? " still" : "") + '" style="--accent-dark:#F1C40F" aria-labelledby="jar-h"><svg class="jar-svg" viewBox="0 0 230 270" role="img" aria-label="Money jar: ' + pounds(totalP) + " in the jar, " + pounds(maxP) + ' when full">' +
+    var totalP = Math.max(0, q.pence), f = Math.min(1, rw ? banked / n : totalP / maxP), top = 40, bottom = 250, h = (bottom - top) * f, ticks = "";
+    /* money: a mark every £5, or every £10 once that would crowd the jar. rewards: a mark at each third */
+    var tickStep = maxP > 6500 ? 1000 : 500, tickAt = [];
+    if (rw) tickAt = [[1 / 3, "1/3"], [2 / 3, "2/3"], [1, "Full"]];
+    else for (var t = tickStep; t <= maxP; t += tickStep) tickAt.push([t / maxP, pounds(t)]);
+    tickAt.forEach(function (tk) { var y = bottom - (bottom - top) * tk[0]; ticks += '<line x1="150" x2="164" y1="' + y.toFixed(1) + '" y2="' + y.toFixed(1) + '" class="jar-tick"/><text x="170" y="' + (y + 5).toFixed(1) + '" class="jar-label">' + tk[1] + "</text>"; });
+    return '<section class="card jar section' + (still ? " still" : "") + '" style="--accent-dark:#F1C40F" aria-labelledby="jar-h"><svg class="jar-svg" viewBox="0 0 230 270" role="img" aria-label="' + (rw ? "Reward jar: " + banked + " of " + n + " questions banked" : "Money jar: " + pounds(totalP) + " in the jar, " + pounds(maxP) + " when full") + '">' +
       '<defs><clipPath id="jar-clip"><path d="M40 40 h90 v10 q20 10 20 40 v140 q0 20 -20 20 h-90 q-20 0 -20 -20 v-140 q0 -30 20 -40 z"/></clipPath></defs>' +
       '<g clip-path="url(#jar-clip)"><g class="jar-coins"><rect class="jar-fill" x="0" y="' + (bottom - h) + '" width="170" height="' + h + '"/>' + (h ? '<rect class="jar-shine" x="0" y="' + (bottom - h) + '" width="170" height="6"/>' : "") + "</g></g>" +
       '<path class="jar-glass" d="M40 40 h90 v10 q20 10 20 40 v140 q0 20 -20 20 h-90 q-20 0 -20 -20 v-140 q0 -30 20 -40 z"/>' +
-      '<rect class="jar-lid" x="34" y="22" width="102" height="20" rx="6"/>' + ticks + "</svg>" +
+      '<rect class="jar-lid" x="34" y="22" width="102" height="20" rx="6"/>' + ticks + "</svg>" + (rw ? rewardsHtml(q, banked, n) + "</section>" :
       '<div><h2 id="jar-h">' + (JAR.title || "The money jar") + '</h2><p class="jar-total">' + pounds(totalP) + "<small>in the jar so far</small></p>" + (JAR.note ? "<p><strong>" + JAR.note + "</strong></p>" : "") +
       "<p>The jar fills from " + (JAR.wheel || "Dougie's Wheel of Fortune") + ". A question you get right for the first time starts at 5p, and every " + STEP + " questions you get right, each right answer is worth 2\u00bdp more. A wrong answer doesn't cost you anything.</p>" +
       ladderHtml(banked, n) +
-      "<p>So far: " + banked + " of " + n + " questions banked. Bank them all and the jar is full at " + pounds(maxP) + ".</p></div></section>";
+      "<p>So far: " + banked + " of " + n + " questions banked. Bank them all and the jar is full at " + pounds(maxP) + ".</p></div></section>");
   }
 
 
@@ -428,8 +488,14 @@
         var st = quizStore(), msg;
         var before = Object.keys(st.banked).length, win = prize(before);
         if (right && !st.banked[q[1]]) {
-          st.banked[q[1]] = true; st.pence += win; msg = "Right! " + pence(win) + " goes in the jar.";
-          if ((before + 1) % STEP === 0) msg += " That's " + (before + 1) + " right, so every right answer is now worth " + pence(prize(before + 1)) + ".";
+          st.banked[q[1]] = true; st.pence += win;
+          if (JAR.rewards) {
+            var mk = rewardMarks(bank.length), hit = mk.indexOf(before + 1), nx = mk.filter(function (m) { return m > before + 1; })[0];
+            msg = "Right! That's " + (before + 1) + " in the jar." + (hit >= 0 ? " You've filled " + (hit === 2 ? "the whole jar" : (hit + 1) + "/3 of the jar") + ": close this and pick your reward under the jar!" : " " + (nx - before - 1) + " more to your next reward.");
+          } else {
+            msg = "Right! " + pence(win) + " goes in the jar.";
+            if ((before + 1) % STEP === 0) msg += " That's " + (before + 1) + " right, so every right answer is now worth " + pence(prize(before + 1)) + ".";
+          }
         }
         else if (right) msg = "Right! You've already banked this one, so nothing goes in this time.";
         else msg = "Not this time, but it hasn't cost you anything. The answer is: " + answer;
@@ -443,7 +509,7 @@
     }
   }
   function wheelHtml(name) {
-    return '<div class="wheel-wrap"><div class="wheel">' + wheelSvg() + '<button type="button" class="wheel-btn" id="wheel" aria-label="SPIN ' + name + ' for a question">SPIN</button></div><p class="wheel-cap"><strong>' + name + '</strong><br>Tap to spin. Right first time: +<span id="wheel-prize">' + pence(prize(Object.keys(quizStore().banked).length)) + "</span>. Wrong: nothing lost.</p></div>";
+    return '<div class="wheel-wrap"><div class="wheel">' + wheelSvg() + '<button type="button" class="wheel-btn" id="wheel" aria-label="SPIN ' + name + ' for a question">SPIN</button></div><p class="wheel-cap"><strong>' + name + '</strong><br>Tap to spin. ' + (JAR.rewards ? "Right first time: it goes in the jar." : 'Right first time: +<span id="wheel-prize">' + pence(prize(Object.keys(quizStore().banked).length)) + "</span>.") + " Wrong: nothing lost.</p></div>";
   }
 
   /* ---------- hub ---------- */
@@ -457,7 +523,7 @@
         var subj = DR.subjects[r.slug], liveCard = r.status === "live" && subj;
         var reports = liveCard ? subj.units.reduce(function (n, u) { return n + (u.reports || []).length; }, 0) : 0;
         return '<article class="card subject-card" style="--accent-dark:' + r.accent + ";--tint:" + r.tint + '"><h2>' + esc(r.name) + "</h2>" +
-          (liveCard ? "<p>" + esc(r.blurb) + ". " + (r.jar ? subj.quiz.length + " questions on its own wheel, with its own money jar: " + pounds(earned(Object.keys(store.read(r.jar).banked || {}).length)) + " so far." : reports + " reports in the notebook" + (subj.notebook ? "" : "s") + ".") + "</p>" + '<a class="btn" href="' + BASE + "/" + r.slug + '/">Open ' + esc(r.name) + "</a>"
+          (liveCard ? "<p>" + esc(r.blurb) + ". " + (r.jar ? subj.quiz.length + " questions on its own wheel, with its own reward jar: " + Object.keys(store.read(r.jar).banked || {}).length + " banked so far." : reports + " reports in the notebook" + (subj.notebook ? "" : "s") + ".") + "</p>" + '<a class="btn" href="' + BASE + "/" + r.slug + '/">Open ' + esc(r.name) + "</a>"
             : '<p><span class="chip">Coming soon</span></p><p>Not yet. Enjoy it while it lasts.</p>') + "</article>";
       }).join("");
       frame("", null,
@@ -1037,7 +1103,7 @@
   function pageMaths(slug, reg) {
     loadSubjects([slug], function () {
       var subj = DR.subjects[slug]; if (!subj) return pageNotFound();
-      JAR = { key: reg.jar, slugs: [slug], title: "The maths money jar", wheel: "Dougie's Maths Wheel of Fortune", note: "This jar is just for maths. It's separate from the main jar on the hub." };
+      JAR = { key: reg.jar, slugs: [slug], title: "The maths reward jar", wheel: "Dougie's Maths Wheel of Fortune", note: "This jar is just for maths. It's separate from the money jar on the hub.", rewards: subj.rewards };
       POCKETS = wheelPockets([slug]);
       var papers = (subj.papers || []).map(function (p) {
         var lost = p.rows.filter(function (r) { return r[2] === null || r[2] < r[3]; });
@@ -1058,6 +1124,25 @@
         jarHtml() +
         '<section class="section" aria-labelledby="papers-h"><h2 id="papers-h">Your three Sparx papers: where to get marks back</h2><p>Each list shows the questions where you lost marks, in the order they came on the paper. Start at the top: the early questions are the easier ones, so that\'s where the quickest marks are. A question left blank always scores 0, so always write something.</p>' + papers + "</section>", subj.name);
       wheelInit([slug]);
+      /* Picking a reward: the lucky dip is drawn once and saved, so it can't be re-rolled */
+      document.getElementById("main").addEventListener("click", function (ev) {
+        var c = ev.target.closest("[data-claim]"), tell = ev.target.closest("[data-tell]"), st = quizStore();
+        if (c) {
+          var k = c.getAttribute("data-claim"), pick = c.getAttribute("data-pick"), dip = subj.rewards.dip;
+          st.rewards = st.rewards || {}; if (st.rewards[k]) return;
+          st.rewards[k] = { pick: pick, prize: pick === "ps" ? subj.rewards.ps : dip[Math.floor(Math.random() * dip.length)], at: Date.now() };
+          store.write(JAR.key, st);
+          document.querySelector(".jar").outerHTML = jarHtml(true);
+          var tb = document.querySelector("[data-tell]"); if (tb) tb.focus();
+          return;
+        }
+        if (tell) {
+          var got = st.rewards || {}, txt = "Dougie's maths reward jar: " + Object.keys(st.banked).length + " questions banked. Rewards won: " + Object.keys(got).sort().map(function (k) { return "Reward " + k + ": " + cap(got[k].prize); }).join("; ") + ".";
+          var note = tell.parentNode.querySelector(".send-note");
+          if (navigator.share) { navigator.share({ title: "Dougie's maths rewards", text: txt }).catch(function () {}); return; }
+          (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(txt) : Promise.reject()).then(function () { note.textContent = "Copied. Paste it to Dad on WhatsApp or by text."; }, function () { note.textContent = txt; });
+        }
+      });
     });
   }
 
