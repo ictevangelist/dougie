@@ -8,7 +8,7 @@ DR.subjects.biology = {
   slug: "biology",
   name: "Biology",
   heading: "AQA GCSE Combined Science (Trilogy) Biology",
-  paper: "Paper 1, Higher tier",
+  paper: "Paper 1, Foundation tier",
   notebook: "https://notebook.google.com/notebook/627c4f27-96ce-4b04-9f28-992ddce72b14",
   checkPrompt: "Based on the quizzes and flashcards I have just done for Unit {unit}, what are my three weakest areas, and what one thing should I do to fix each one? Keep it short.",
   checkNote: "Paste this into the notebook chat, then press Save to note on the answer.",
@@ -133,21 +133,16 @@ DR.subjects.biology = {
     ["4.4", "Photosynthesis is endothermic. What does that mean?", "Energy is taken in from the surroundings", "Energy is given out to the surroundings", "It only happens in the dark", "It needs oxygen to happen"],
     ["4.4", "Where in a plant cell does photosynthesis happen?", "In the chloroplasts", "In the mitochondria", "In the vacuole", "In the nucleus"],
     ["4.4", "Which of these can limit the rate of photosynthesis?", "Light intensity", "Oxygen concentration", "The amount of nitrogen in the air", "The size of the roots"],
-    ["4.4", "In the light practical, you move the lamp to half the distance from the plant. What happens to the light intensity?", "It becomes 4 times greater", "It becomes 2 times greater", "It halves", "It becomes a quarter"],
     ["4.4", "Plants join glucose with nitrate ions to make what?", "Amino acids", "Starch", "Cellulose", "Lipids"],
     ["4.4", "Why do plants store glucose as starch?", "Starch is insoluble, so it doesn't upset osmosis in the cells", "Starch releases energy faster than glucose", "Starch is a smaller molecule than glucose", "Starch moves around the plant more easily"],
-    ["4.4", "Why might a grower burn a paraffin heater in a greenhouse?", "It warms the air and adds carbon dioxide", "It adds oxygen for the plants", "It gives light for photosynthesis at night", "It keeps the air dry"],
     ["4.4", "Which is the word equation for aerobic respiration?", "Glucose + oxygen → carbon dioxide + water", "Carbon dioxide + water → glucose + oxygen", "Glucose → lactic acid", "Glucose → ethanol + carbon dioxide"],
     ["4.4", "What does anaerobic respiration make in your muscles?", "Lactic acid", "Ethanol and carbon dioxide", "Carbon dioxide and water", "Glucose and oxygen"],
     ["4.4", "What does anaerobic respiration make in yeast cells?", "Ethanol and carbon dioxide", "Lactic acid", "Carbon dioxide and water", "Lactic acid and carbon dioxide"],
     ["4.4", "Why does aerobic respiration transfer more energy than anaerobic respiration?", "The glucose is completely oxidised", "It happens much faster", "It uses lactic acid as well as glucose", "It happens in the ribosomes"],
     ["4.4", "During exercise, what happens to your breathing rate and breath volume?", "They both go up", "They both go down", "Breathing rate goes up, breath volume goes down", "Breathing rate goes down, breath volume goes up"],
-    ["4.4", "What is oxygen debt?", "The extra oxygen needed after exercise to break down lactic acid", "The oxygen your muscles run out of when you start exercising", "The oxygen stored in your muscles for exercise", "The oxygen breathed out after exercise"],
-    ["4.4", "Where is lactic acid taken to be turned back into glucose?", "The liver", "The kidneys", "The lungs", "The heart"],
     ["4.4", "What is metabolism?", "All of the chemical reactions in a cell or the body", "Only the reactions that break down food", "Only respiration", "The speed of your heart rate"],
     ["4.4", "Which gas do plants take in for photosynthesis?", "Carbon dioxide", "Oxygen", "Nitrogen", "Water vapour"],
     ["4.4", "What happens to the rate of photosynthesis if it gets too hot?", "It falls, because the enzymes are denatured", "It keeps rising", "It falls, because light becomes the limiting factor", "It stays the same"],
-    ["4.4", "On a graph of photosynthesis rate against light intensity, why does the line level off?", "Something else, like carbon dioxide or temperature, is now the limiting factor", "The plant has run out of light", "The plant's enzymes are denatured", "The plant has made enough glucose"],
     ["4.4", "Plants turn glucose into cellulose. What is cellulose used for?", "Strengthening cell walls", "Storing energy", "Making amino acids", "Storing oil in seeds"],
     ["4.4", "Respiration is exothermic. What does that mean?", "It transfers energy to the surroundings", "It takes in energy from the surroundings", "It only happens in the light", "It needs carbon dioxide to happen"],
     ["4.4", "Why do your muscles get tired during long, hard exercise?", "Lactic acid builds up from anaerobic respiration", "They run out of carbon dioxide", "They stop respiring completely", "They lose their mitochondria"],
@@ -186,8 +181,8 @@ DR.subjects.biology = {
     {
       code: "4.4", title: "Bioenergetics", colour: "#2ECC71", dark: "#27AE60", tint: "#E2F8EB",
       reports: [
-        { code: "4.4a", link: "https://notebooklm.link.google/aNeXtAWu3Ixp", title: "Photosynthesis", focus: "Equations, limiting factors and their graphs, the light intensity practical, the inverse square law, greenhouses." },
-        { code: "4.4b", link: "https://notebooklm.link.google/jCBlhN4rMcII", title: "Respiration", focus: "Aerobic and anaerobic respiration, exercise, oxygen debt, metabolism." }
+        { code: "4.4a", link: "https://notebooklm.link.google/aNeXtAWu3Ixp", title: "Photosynthesis", focus: "Equations, what affects the rate of photosynthesis, the light intensity practical, and how plants use glucose. Limiting factor graphs, the inverse square law and greenhouse costs are Higher only, so skip those parts." },
+        { code: "4.4b", link: "https://notebooklm.link.google/jCBlhN4rMcII", title: "Respiration", focus: "Aerobic and anaerobic respiration, exercise, oxygen debt and metabolism. Lactic acid going to the liver is Higher only, so skip that part." }
       ]
     },
     {
@@ -202,7 +197,7 @@ DR.subjects.biology = {
       id: "practice-paper-1",
       flexible: true,
       paper: true,
-      blurb: "30 minutes, 30 marks. Topics 4.1 to 4.4, in the style of Paper 1 (Higher).",
+      blurb: "30 minutes, 30 marks. Topics 4.1 to 4.4, in the style of Paper 1 (Foundation).",
       title: "Practice paper 1: Biology Paper 1 topics",
       short: "Practice paper 1",
       slots: [
