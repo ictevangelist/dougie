@@ -13,7 +13,7 @@ DR.subjects.biology = {
   checkPrompt: "Based on the quizzes and flashcards I have just done for Unit {unit}, what are my three weakest areas, and what one thing should I do to fix each one? Keep it short.",
   checkNote: "Paste this into the notebook chat, then press Save to note on the answer.",
   steps: {
-    report: ["Do the first quiz, before you read anything.", "Go through the key terms flashcards.", "Read the exam mistakes section.", "Time left? Do the final quiz, then the second flashcard set."],
+    report: ["The first quiz, before you read anything.", "The key terms flashcards.", "The exam mistakes section.", "The final quiz.", "The second flashcard set."],
     check: ["Copy the prompt below.", "Paste it into the notebook chat.", "Press Save to note on the answer."],
     setup: ["Put your CGP book, your knowledge organiser and some paper for notes next to you.", "Open the notebook.", "Check it loads.", "Find report 4.1a in the Studio panel."]
   },
@@ -22,8 +22,8 @@ DR.subjects.biology = {
   howTo: [
     "Every report lives in one Gemini Notebook. Open the notebook, then open each report from the Studio panel by its code, for example 4.1a.",
     "Inside each report, do the first quiz BEFORE reading anything. Getting things wrong at this stage is useful, because it shows what to focus on.",
-    "The order of work in each slot is: (1) the first quiz, (2) the key terms flashcards, (3) the exam mistakes section. Then, (4) if there's time, the final quiz and the second flashcard set.",
-    "When a slot's time is up, move on, even if you haven't finished. Getting through everything matters more than finishing every part today.",
+    "Every report has five parts, and you must do ALL FIVE, in this order: (1) the first quiz, (2) the key terms flashcards, (3) the exam mistakes section, (4) the final quiz, (5) the second flashcard set. Tick each part off on this page as you finish it. A report only counts as done when all five are ticked.",
+    "Don't skip parts to keep up with the timer. Finish all five parts of a report before you move on, even if you run over. The timer shows you where you should be, not permission to skip.",
     "After each unit, copy the unit check prompt into the notebook chat, then press \"Save to note\" on the answer.",
     "When the session's over, the box at the top of the page asks you to send your results to Dad. Do it straight away: press Send my results to Dad and send him the message.",
     "You can use your CGP book and your knowledge organiser whenever you want, but only as a last resort, when you really can't remember something. Anything you can't remember, write it down as a note.",

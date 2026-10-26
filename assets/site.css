@@ -342,3 +342,21 @@ a, button, label, summary { -webkit-tap-highlight-color: rgba(46, 204, 113, .25)
 .write-box { width: 100%; min-height: 18em; font: inherit; line-height: 1.6; background: var(--space); color: var(--ink); border: 2px solid var(--ink-2); border-radius: var(--radius-s); padding: var(--space-3); resize: vertical; }
 .write-box:focus { outline: 3px solid var(--portal); outline-offset: 2px; }
 .wcount { font-weight: 700; margin: var(--space-1) 0 var(--space-3); }
+
+/* The five parts of each report: a row each, ticked rows Emerald-bordered with a "Done" label */
+.parts { border: 2px solid var(--ink-2); border-radius: var(--radius); padding: var(--space-3) var(--space-4); margin: var(--space-3) 0; background: var(--space); }
+.parts-h { font-weight: 700; font-size: var(--step-1); margin: 0 0 var(--space-2); }
+.parts ol { list-style: none; margin: 0; padding: 0; display: grid; gap: var(--space-2); }
+.part { border: 2px solid var(--line); border-radius: var(--radius-s); padding: var(--space-2) var(--space-3); display: flex; flex-wrap: wrap; gap: var(--space-2) var(--space-3); align-items: center; }
+.part.is-done { border-color: #2ECC71; }
+.part.is-done .part-tick strong::after { content: "  Done"; color: #2ECC71; }
+.part-tick { display: flex; align-items: center; gap: var(--space-2); min-height: var(--tap); cursor: pointer; flex: 1 1 14em; }
+.part-tick input { width: 24px; height: 24px; accent-color: #2ECC71; flex: none; }
+.part-score { display: flex; align-items: center; gap: var(--space-1); flex-wrap: wrap; }
+.part-score input { width: 4.5em; min-height: 40px; font: inherit; background: var(--panel); color: var(--ink); border: 2px solid var(--ink-2); border-radius: var(--radius-s); padding: 4px 8px; }
+.part-note { flex: 1 1 100%; min-height: 40px; font: inherit; background: var(--panel); color: var(--ink); border: 1px solid var(--line); border-radius: var(--radius-s); padding: 6px 10px; }
+.part-note::placeholder { color: var(--ink-2); }
+.part-msg { flex: 1 1 100%; margin: 0; font-weight: 700; color: #F1C40F; }
+.part-msg:empty { display: none; }
+.parts-count, .done-status { font-weight: 700; margin: var(--space-2) 0 0; }
+.parts-mission { font-size: var(--step-1); margin: 0 0 var(--space-3); }

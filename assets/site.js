@@ -523,6 +523,10 @@
       if (!sess) return pageNotFound();
       var idx = reportIndex(subj);
       var data = store.read(slug), ss = (data.sessions && data.sessions[date]) || { done: {}, reports: {} };
+      /* a report only counts as done when all five parts are ticked off */
+      var fixed = false;
+      sess.slots.forEach(function (sl, i) { if (sl.type === "report" && ss.done[i] && partsDone(((ss.parts || {})[i]) || {}, partLabels(subj).length) < partLabels(subj).length) { delete ss.done[i]; fixed = true; } });
+      if (fixed) { data.sessions[date] = ss; store.write(slug, data); }
       var breaks = (sess.breaks || []).map(function (b) { return "break " + range(b.start, b.end); }).join(", ");
       var howTo = sess.howTo || subj.howTo || [];
       var breakMins = sess.flexible ? sess.slots.filter(function (x) { return x.type === "break"; }).reduce(function (n, x) { return n + x.mins; }, 0) : 0;
@@ -547,6 +551,26 @@
     return '<div class="prompt"><p class="label">' + esc(label) + '</p><p id="' + id + '">' + esc(text) + '</p>' +
       '<button type="button" class="btn" data-copy="' + id + '">Copy</button><span class="copied" aria-live="polite"></span></div><p class="muted">' + esc(note) + "</p>";
   }
+  /* The five parts of every report: a tick each, a score for the quizzes and flashcards, and a comment */
+  var PART_KIND = ["quiz", "cards", "read", "quiz", "cards"];
+  function partLabels(subj) { return (subj.steps && subj.steps.report) || []; }
+  function partsDone(p, n) { var c = 0; for (var k = 0; k < n; k++) if ((p[k] || {}).done) c++; return c; }
+  function partsHtml(subj, i, ss) {
+    var labels = partLabels(subj), p = (ss.parts || {})[i] || {};
+    return '<div class="parts" data-parts="' + i + '"><p class="parts-h">Do all five parts, in this order. Tick each one off as you finish it.</p><ol>' + labels.map(function (lab, k) {
+      var v = p[k] || {}, kind = PART_KIND[k] || "read", name = lab.replace(/[,.].*$/, "");
+      var num = function (f, val, al) { return '<input type="number" inputmode="numeric" min="0" max="500" data-pf="' + f + '" value="' + esc(val == null ? "" : val) + '" aria-label="' + esc(name + ": " + al) + '">'; };
+      var score = kind === "read" ? "" : '<span class="part-score">' + (kind === "quiz" ? "Score " : "Cards I knew ") + num("got", v.got, kind === "quiz" ? "score" : "cards I knew") + " out of " + num("of", v.of, "out of") + "</span>";
+      return '<li class="part' + (v.done ? " is-done" : "") + '" data-part="' + k + '"><label class="part-tick"><input type="checkbox" data-pf="done"' + (v.done ? " checked" : "") + "> <strong>" + esc(lab) + "</strong></label>" + score +
+        '<input type="text" class="part-note" data-pf="note" value="' + esc(v.note || "") + '" placeholder="Comment: what went well, what to look at again" aria-label="' + esc(name + ": comment") + '"><p class="part-msg" aria-live="polite"></p></li>';
+    }).join("") + '</ol><p class="parts-count">' + partsDone(p, labels.length) + " of " + labels.length + " parts done</p></div>";
+  }
+  function partsLine(subj, p) {
+    var labels = partLabels(subj), bits = [];
+    labels.forEach(function (lab, k) { var v = p[k] || {}, name = lab.replace(/[,.].*$/, "").replace(/^The /, ""); if (v.got !== undefined && v.got !== "" && v.of) bits.push(name + " " + v.got + "/" + v.of); });
+    var notes = labels.map(function (lab, k) { var v = p[k] || {}; return v.note ? lab.replace(/[,.].*$/, "").replace(/^The /, "") + ": " + v.note : ""; }).filter(Boolean);
+    return partsDone(p, labels.length) + " of " + labels.length + " parts" + (bits.length ? "; " + bits.join(", ") : "") + (notes.length ? ". Comments: " + notes.join("; ") : "");
+  }
   function slotHtml(subj, sess, sl, i, idx, ss) {
     var u, code = "", focus = "", extra = "", isDone = !!ss.done[i];
     if (sl.type === "report") {
@@ -557,7 +581,8 @@
         : nb ? '<a class="btn btn-ghost" href="' + esc(nb) + '" target="_blank" rel="noopener">Open the notebook</a><span>In the Studio panel, look for <strong>' + esc(r.lookFor || r.code) + "</strong>.</span>"
         : "<span>Dad's still setting this report up in the notebook.</span>") + "</p>" +
         (sl.prompt ? promptHtml("p-" + i, sl.prompt, "End of session check", subj.checkNote) : "") +
-        '<div class="after" data-after="' + i + '"' + (isDone ? "" : " hidden") + ">" + rating("rate-" + i, saved.rating) + '<p style="margin-top:12px">' + scoreBox("score-" + i, saved.score) + "</p></div>";
+        partsHtml(subj, i, ss) +
+        '<div class="after" data-after="' + i + '"' + (isDone ? "" : " hidden") + ">" + rating("rate-" + i, saved.rating) + "</div>";
     } else if (sl.type === "practice") {
       u = unitByCode(subj, sl.unit);
       extra = actHtml(subj, sl, i, ss);
@@ -566,7 +591,8 @@
       extra = promptHtml("p-" + i, subj.checkPrompt.replace("{unit}", sl.unit + " " + (u ? u.title : "")), "Unit check prompt", subj.checkNote);
     }
     var style = u ? unitStyle(u) : (sl.type === "break" ? ' style="--accent-dark:#95A5A6"' : ' style="--accent-dark:#ECF0F1"');
-    var done = sl.type === "break" ? "" : '<label class="done"><input type="checkbox" data-done="' + i + '"' + (isDone ? " checked" : "") + "> Done</label>";
+    var done = sl.type === "break" ? "" : sl.type === "report" ? '<p class="done-status" data-status="' + i + '">' + (isDone ? "Done: all five parts ticked off." : "This report is done when all five parts are ticked off.") + "</p>"
+      : '<label class="done"><input type="checkbox" data-done="' + i + '"' + (isDone ? " checked" : "") + "> Done</label>";
     var chip = code ? '<span class="chip">' + esc(code) + "</span>" : (u ? '<span class="chip">' + esc(u.code === "Mixed" ? "Mixed" : "Unit " + u.code) + "</span>" : "");
     return '<li class="card slot slot-' + sl.type + (isDone ? " is-done" : "") + '"' + style + ' id="slot-' + i + '" data-slot="' + i + '">' +
       '<div class="slot-top"><span class="slot-time">' + (sl.start ? range(sl.start, sl.end) : "Slot " + (i + 1)) + '</span><span class="slot-dur">' + dur(sl) + "</span>" + chip +
@@ -597,6 +623,10 @@
       var nb = sess.notebook || subj.notebook;
       return nb ? '<a class="btn" href="' + esc(nb) + '" target="_blank" rel="noopener">Open the notebook</a>' : "";
     }
+    function partsStatus(i) {
+      var p = ((ssNow().parts || {})[i]) || {}, n = partLabels(subj).length, c = partsDone(p, n);
+      return '<p class="parts-mission"><strong>' + c + " of " + n + " parts done.</strong> " + (c === n ? "This report is finished." : "Tick each part off in this slot, with your scores, before you move on.") + ' <a href="#slot-' + i + '">Go to the slot</a></p>';
+    }
     function missionHtml(st) {
       if (st.when === "ready") return '<section class="mission" aria-labelledby="m-h"><p class="kicker">Ready when you are</p><h2 id="m-h">' + esc(sess.title) + "</h2><p>This one takes about " + hrs(sess.totalMins) + ". Press Start when you're sat down with a drink, a pen and some paper. The timer runs from then, and you can pause it if you need to stop.</p>" +
         '<button type="button" class="btn btn-big" id="clock-start">Start</button></section>';
@@ -612,7 +642,7 @@
       return '<section class="mission" aria-labelledby="m-h"><p class="kicker">' + (st.paused ? "Paused" : isBreak ? "Break" : "Right now") + '</p><h2 id="m-h">' + esc(title) + '</h2>' +
         '<p class="countdown">' + clockText(st.left) + "<small>" + (st.paused ? "left, paused" : isBreak ? "until you're back on" : "left on this one") + "</small></p>" + controls +
         (sl.note ? '<p class="note"><strong>' + esc(sl.note) + "</strong></p>" : "") +
-        '<ol class="steps">' + steps(sl).map(function (s) { return "<li>" + esc(s) + "</li>"; }).join("") + "</ol>" +
+        '<ol class="steps">' + steps(sl).map(function (s) { return "<li>" + esc(s) + "</li>"; }).join("") + "</ol>" + (sl.type === "report" ? partsStatus(st.i) : "") +
         ((sl.type === "report" || sl.type === "practice") && subj.stuck ? '<div class="stuck"><p class="stuck-h">' + esc(subj.stuck.title) + "</p><ol>" + subj.stuck.lines.map(function (s) { return "<li>" + esc(s) + "</li>"; }).join("") + "</ol>" + (subj.stuck.dad ? '<p class="stuck-dad">' + esc(subj.stuck.dad) + "</p>" : "") + "</div>" : "") +
         '<div class="btn-row">' + (isBreak ? "" : (sl.type === "practice" ? '<a class="btn" href="#slot-' + st.i + '">Go to the practice</a>' : missionLink(sl) + '<a class="btn btn-ghost" href="#slot-' + st.i + '">Go to this slot</a>')) +
         '<button type="button" class="btn btn-ghost" id="focus-btn" aria-pressed="' + (focus ? "true" : "false") + '">' + (focus ? "Show everything" : "Focus mode") + "</button></div>" + nextLine + "</section>";
@@ -628,13 +658,15 @@
       var missing = sess.slots.filter(function (s) { if (s.type !== "report") return false; var x = ss.reports[s.report]; return !x || x.score === undefined || x.score === ""; }).length;
       var practice = [];
       sess.slots.forEach(function (s, i) { if (s.type !== "practice") return; var p = (ss.practice || {})[i] || {}; var ak = ((subj.activities || {})[s.activity] || {}).kind; practice.push(slotTitle(subj, s, idx).replace(/^Practice: /, "") + ": " + (ak === "write" ? (p.ok ? "done, " + words(p.text) + " words" : p.text ? "started, " + words(p.text) + " words" : "not done yet") : p.ok ? "got it right" : p.shown ? "answers shown" : "not done yet")); });
-      return { n: n, c: c, scores: scores, missing: missing, practice: practice };
+      var reportLines = [];
+      sess.slots.forEach(function (s, i) { if (s.type === "report") reportLines.push(slotTitle(subj, s, idx) + ": " + partsLine(subj, ((ss.parts || {})[i]) || {})); });
+      return { n: n, c: c, scores: scores, missing: missing, practice: practice, reportLines: reportLines };
     }
     function completeHtml() {
       var r = results(), all = r.n === total;
       var text = sess.title + (sess.flexible ? "" : ", " + longDate(date)) + "\nSlots done: " + r.n + " of " + total +
         "\nRed: " + (r.c.red.join(", ") || "none") + "\nAmber: " + (r.c.amber.join(", ") || "none") + "\nGreen: " + (r.c.green.join(", ") || "none") +
-        (r.scores.length ? "\nQuiz scores: " + r.scores.join(", ") : "") + (r.practice.length ? "\nPractice: " + r.practice.join(", ") : "");
+        (r.reportLines.length ? "\nReports:\n" + r.reportLines.map(function (x) { return "- " + x; }).join("\n") : "") + (r.practice.length ? "\nPractice: " + r.practice.join(", ") : "");
       return '<section class="mission complete" aria-labelledby="m-h"><p class="kicker">Done</p><h2 id="m-h">Session complete</h2>' +
         "<p>You ticked " + r.n + " of " + total + " slots." + (all ? " All of them. Respect." : "") + "</p>" +
         '<div class="stuck send-dad"><p class="stuck-h">First, send your results to Dad</p><p>Press the button, then send the message to Dad on WhatsApp or by text.</p>' +
@@ -663,7 +695,36 @@
       else if (st.when === "before") document.title = "Starts in " + clockText(st.secs) + " | Dougie's Revision";
       else document.title = baseTitle;
     }
+    function partEdit(ev) {
+      var t = ev.target, box = t.closest("[data-parts]"); if (!box || !t.hasAttribute("data-pf")) return false;
+      if (ev.type === "input" && t.type === "checkbox") return true;
+      var i = +box.getAttribute("data-parts"), li = t.closest("[data-part]"), k = +li.getAttribute("data-part"), f = t.getAttribute("data-pf"), msg = li.querySelector(".part-msg");
+      var d = store.read(slug), ss = store.session(d, date); ss.parts = ss.parts || {}; var p = ss.parts[i] = ss.parts[i] || {}, v = p[k] = p[k] || {}, kind = PART_KIND[k] || "read";
+      msg.textContent = "";
+      if (f === "note") v.note = t.value;
+      if (f === "got" || f === "of") v[f] = t.value === "" ? "" : Math.max(0, Math.round(+t.value));
+      if (f === "done") {
+        if (t.checked && kind !== "read" && (v.got === undefined || v.got === "" || !v.of)) { t.checked = false; msg.textContent = "Put in your score first, then tick it off."; }
+        else if (t.checked && kind !== "read" && +v.got > +v.of) { t.checked = false; msg.textContent = "Your score can't be more than the total."; }
+        else v.done = t.checked;
+      }
+      if (kind !== "read" && v.done && (v.got === "" || !v.of || +v.got > +v.of)) { v.done = false; li.querySelector('[data-pf="done"]').checked = false; }
+      var n = partLabels(subj).length, all = partsDone(p, n) === n, sl = sess.slots[i];
+      if (all) ss.done[i] = true; else delete ss.done[i];
+      store.write(slug, d);
+      if (k === 3 && v.of && v.got !== "") setReport(slug, date, sl.report, { score: Math.min(10, Math.round(+v.got / +v.of * 10)) });
+      li.classList.toggle("is-done", !!v.done);
+      box.querySelector(".parts-count").textContent = partsDone(p, n) + " of " + n + " parts done";
+      var card = box.closest(".slot"); card.classList.toggle("is-done", all);
+      card.querySelector(".done-slot").innerHTML = all ? '<span class="badge-done">Done</span>' : "";
+      card.querySelector("[data-status]").textContent = all ? "Done: all five parts ticked off." : "This report is done when all five parts are ticked off.";
+      var after = main.querySelector('[data-after="' + i + '"]'); if (after) after.hidden = !all;
+      progress(); clock();
+      return true;
+    }
+    main.addEventListener("input", function (ev) { var t = ev.target; if (t.closest && t.closest("[data-parts]") && t.type !== "checkbox") partEdit(ev); });
     main.addEventListener("change", function (ev) {
+      if (ev.target.closest("[data-parts]")) { if (ev.target.type === "checkbox") partEdit(ev); return; }
       var t = ev.target, d = store.read(slug), ss = store.session(d, date);
       if (t.hasAttribute("data-done")) {
         var i = +t.getAttribute("data-done");
