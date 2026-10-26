@@ -289,11 +289,13 @@
     return (p < 0 ? "-" : "") + (DR.pay.currency || "") + (w % 100 || half ? (w / 100).toFixed(2) : w / 100) + (half ? "\u00bd" : "");
   }
   function pence(p) { var w = Math.floor(p); return (w + (p - w >= 0.5 ? "\u00bd" : "")) + "p"; }
-  /* A right answer starts at 5p and goes up 2½p for every 50 questions banked. A wrong answer is always 5p off. */
+  /* A right answer starts at 5p and goes up 2½p for every 50 questions banked. A wrong answer costs nothing. */
   var STEP = 50, REPEAT = 0.25;
   function prize(banked) { return 5 + 2.5 * Math.floor(banked / STEP); }
-  function quizStore() { var q = store.read("wheel"); q.pence = q.pence || 0; q.banked = q.banked || {}; return q; }
-  /* The money jar fills only from Dougie's Wheel of Fortune: 5p the first time each question is right, 5p off for each wrong answer.
+  /* The jar is worked out from the questions banked, so it can never go down */
+  function earned(n) { var t = 0; for (var k = 0; k < n; k++) t += prize(k); return t; }
+  function quizStore() { var q = store.read("wheel"); q.banked = q.banked || {}; q.pence = earned(Object.keys(q.banked).length); return q; }
+  /* The money jar fills only from Dougie's Wheel of Fortune: 5p the first time each question is right, rising every 50; wrong answers cost nothing.
      It is full when every question on the wheel has been banked. */
   /* The sign that shows the rule: one rung per £5 band, with where he is now and how far to the next one */
   function ladderHtml(banked, n) {
@@ -305,7 +307,7 @@
     return '<div class="ladder"><h3>The more you get right, the more each answer is worth</h3>' +
       '<p class="ladder-next">Every right answer is worth <strong>' + pence(prize(banked)) + "</strong> now. " + (lvl < rungs ? "Get <strong>" + toGo + " more right</strong> and it goes up to <strong>" + pence(prize(banked) + 2.5) + "</strong>." : "That's the top rung.") + "</p>" +
       '<div class="ladder-bar" role="progressbar" aria-label="Right answers towards the next rung" aria-valuemin="0" aria-valuemax="' + STEP + '" aria-valuenow="' + (STEP - toGo) + '"><i style="width:' + ((STEP - toGo) / STEP * 100).toFixed(1) + '%"></i></div>' +
-      '<ol class="rungs">' + out + '</ol><p class="muted">Every ' + STEP + " right answers, each one is worth 2\u00bdp more. A wrong answer always takes 5p off.</p></div>";
+      '<ol class="rungs">' + out + '</ol><p class="muted">Every ' + STEP + " right answers, each one is worth 2\u00bdp more. A wrong answer doesn't cost you anything.</p></div>";
   }
 
   function jarHtml(still) {
@@ -322,9 +324,9 @@
       '<path class="jar-glass" d="M40 40 h90 v10 q20 10 20 40 v140 q0 20 -20 20 h-90 q-20 0 -20 -20 v-140 q0 -30 20 -40 z"/>' +
       '<rect class="jar-lid" x="34" y="22" width="102" height="20" rx="6"/>' + ticks + "</svg>" +
       '<div><h2 id="jar-h">The money jar</h2><p class="jar-total">' + pounds(totalP) + "<small>in the jar so far</small></p>" +
-      "<p>The jar fills from Dougie's Wheel of Fortune. A question you get right for the first time starts at 5p, and every " + STEP + " questions you get right, each right answer is worth 2\u00bdp more. A wrong answer always takes 5p off.</p>" +
+      "<p>The jar fills from Dougie's Wheel of Fortune. A question you get right for the first time starts at 5p, and every " + STEP + " questions you get right, each right answer is worth 2\u00bdp more. A wrong answer doesn't cost you anything.</p>" +
       ladderHtml(banked, n) +
-      "<p>So far: " + banked + " of " + n + " questions banked" + (q.pence < 0 ? ", and the wrong answers have put you " + pounds(-q.pence) + " behind" : "") + ". Bank them all and the jar is full at " + pounds(maxP) + ".</p></div></section>";
+      "<p>So far: " + banked + " of " + n + " questions banked. Bank them all and the jar is full at " + pounds(maxP) + ".</p></div></section>";
   }
 
 
@@ -391,7 +393,7 @@
       var pick = from[Math.floor(Math.random() * from.length)], q = pick.q, u = units[pick.slug][q[0]], reg = registryItem(pick.slug), again = !!bk[q[1]];
       lastQ = q[1];
       var opts = shuffle(q.slice(2, 6));
-      dlg.innerHTML = '<p class="kicker">' + (!pocket.slug ? "Mix: anything. This one is " : "") + (multi || !pocket.slug ? esc(reg.name) + ", " : "") + "Unit " + esc(q[0]) + (u ? ": " + esc(u.title) : "") + '</p><h2 id="wheel-q-h">' + esc(q[1]) + "</h2>" + (again ? '<p class="quiz-again">You\'ve banked this one before, so it\'s practice: a right answer pays nothing this time, and a wrong one is still 5p off.</p>' : "") +
+      dlg.innerHTML = '<p class="kicker">' + (!pocket.slug ? "Mix: anything. This one is " : "") + (multi || !pocket.slug ? esc(reg.name) + ", " : "") + "Unit " + esc(q[0]) + (u ? ": " + esc(u.title) : "") + '</p><h2 id="wheel-q-h">' + esc(q[1]) + "</h2>" + (again ? '<p class="quiz-again">You\'ve banked this one before, so it\'s practice: nothing to win or lose this time.</p>' : "") +
         '<div class="quiz-opts">' + opts.map(function (o) { return '<button type="button" class="quiz-opt" data-right="' + (o === q[2] ? "1" : "0") + '">' + esc(o) + "</button>"; }).join("") + "</div>" +
         '<p class="quiz-result" aria-live="polite"></p><div class="btn-row"><button type="button" class="btn" data-act="again" hidden>Spin again</button><button type="button" class="btn btn-ghost" data-act="close">Close</button></div>';
       dlg.showModal();
@@ -407,7 +409,7 @@
           if ((before + 1) % STEP === 0) msg += " That's " + (before + 1) + " right, so every right answer is now worth " + pence(prize(before + 1)) + ".";
         }
         else if (right) msg = "Right! You've already banked this one, so nothing goes in this time.";
-        else { st.pence -= 5; msg = "Not this time. 5p comes out of the jar. The answer is: " + q[2]; }
+        else msg = "Not this time, but it hasn't cost you anything. The answer is: " + q[2];
         store.write("wheel", st);
         [].forEach.call(dlg.querySelectorAll(".quiz-opt"), function (o) {
           o.disabled = true;
@@ -435,7 +437,7 @@
             : '<p><span class="chip">Coming soon</span></p><p>Not yet. Enjoy it while it lasts.</p>') + "</article>";
       }).join("");
       frame("", null,
-        '<div class="hero"><div><h1>Right then, Dougie.</h1><p class="lede">This is your revision lab. The plan, the timer and the money jar are all in here, so there\'s nothing to work out. Turn up, do the thing on screen, move on when the timer says so.</p></div><div class="wheel-wrap"><div class="wheel">' + wheelSvg() + '<button type="button" class="wheel-btn" id="wheel" aria-label="SPIN Dougie\'s Wheel of Fortune for a question">SPIN</button></div><p class="wheel-cap"><strong>Dougie\'s Wheel of Fortune</strong><br>Tap to spin. Right first time: +<span id="wheel-prize">' + pence(prize(Object.keys(quizStore().banked).length)) + '</span>. Wrong: 5p off.</p></div></div>' +
+        '<div class="hero"><div><h1>Right then, Dougie.</h1><p class="lede">This is your revision lab. The plan, the timer and the money jar are all in here, so there\'s nothing to work out. Turn up, do the thing on screen, move on when the timer says so.</p></div><div class="wheel-wrap"><div class="wheel">' + wheelSvg() + '<button type="button" class="wheel-btn" id="wheel" aria-label="SPIN Dougie\'s Wheel of Fortune for a question">SPIN</button></div><p class="wheel-cap"><strong>Dougie\'s Wheel of Fortune</strong><br>Tap to spin. Right first time: +<span id="wheel-prize">' + pence(prize(Object.keys(quizStore().banked).length)) + '</span>. Wrong: nothing lost.</p></div></div>' +
         '<dialog class="quiz" id="wheel-q" aria-labelledby="wheel-q-h"></dialog>' +
         '<div id="hub-now" aria-live="polite"></div>' +
         jarHtml() +

@@ -21,7 +21,7 @@ Bump the version so browsers fetch the new files: run `V=$(cat assets/site.css a
 
 ## Dougie's Wheel of Fortune
 
-The wheel on the hub lands on a unit and asks a question from that subject's `quiz` list in its data file (unit, question, right answer, three wrong answers; the options are shuffled on screen). A right answer adds 5p to the money jar the first time that question is answered correctly; a wrong answer always takes 5p off. Saved in localStorage under `dougie-revision:wheel`.
+The wheel on the hub lands on a unit and asks a question from that subject's `quiz` list in its data file (unit, question, right answer, three wrong answers; the options are shuffled on screen). A right answer adds 5p to the money jar the first time that question is answered correctly; a wrong answer costs nothing. Saved in localStorage under `dougie-revision:wheel`.
 
 ## Flexible sessions and practice slots
 
