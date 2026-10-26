@@ -277,7 +277,25 @@
   function prize(banked) { return 5 + 2.5 * Math.floor(banked / STEP); }
   /* The jar is worked out from the questions banked, so it can never go down */
   function earned(n) { var t = 0; for (var k = 0; k < n; k++) t += prize(k); return t; }
-  function quizStore() { var q = store.read("wheel"); q.banked = q.banked || {}; q.pence = earned(Object.keys(q.banked).length); return q; }
+  /* Which wheel and jar this page uses: the hub's (key "wheel", every subject without its own jar) or a subject's own, like Maths ("maths-wheel") */
+  var JAR = { key: "wheel", slugs: [] };
+  function quizStore() { var q = store.read(JAR.key); q.banked = q.banked || {}; q.pence = earned(Object.keys(q.banked).length); return q; }
+  /* Typed answers: "3/4", "4 5/12", "£5.60", "x = 3" and "12 cm" all read as numbers. A leading ~ on the answer accepts anything that rounds to it. */
+  function numOf(s) {
+    s = String(s).toLowerCase().replace(/[\u2212\u2013]/g, "-").replace(/[,\u00a3$\u20ac\u00a5]/g, "").trim();
+    var m = s.match(/^(-?)(\d+)\s+(\d+)\s*\/\s*(\d+)$/);
+    if (m) return (m[1] ? -1 : 1) * (+m[2] + m[3] / m[4]);
+    s = s.replace(/\s+/g, "").replace(/^[a-z]+=/, "");
+    m = s.match(/^(-?\d*\.?\d+)(?:\/(-?\d*\.?\d+))?[a-z\u00b0%\u00b2\u00b3\/]*$/);
+    return m ? (m[2] != null ? m[1] / m[2] : +m[1]) : NaN;
+  }
+  function typedRight(spec, typed) {
+    var v = numOf(typed), near = spec.charAt(0) === "~";
+    return spec.replace(/^~/, "").split("|").some(function (alt) {
+      var a = numOf(alt), dp = ((alt.split(".")[1] || "").match(/^\d*/) || [""])[0].length;
+      return near ? Math.abs(v - a) <= 0.5 * Math.pow(10, -dp) + 1e-9 : Math.abs(v - a) <= 1e-9 * Math.max(1, Math.abs(a));
+    });
+  }
   /* The money jar fills only from Dougie's Wheel of Fortune: 5p the first time each question is right, rising every 50; wrong answers cost nothing.
      It is full when every question on the wheel has been banked. */
   /* The sign that shows the rule: one rung per £5 band, with where he is now and how far to the next one */
@@ -295,19 +313,21 @@
 
   function jarHtml(still) {
     var q = quizStore(), n = 0;
-    Object.keys(DR.subjects).forEach(function (k) { if ((registryItem(k) || {}).status === "live") n += (DR.subjects[k].quiz || []).length; });
+    JAR.slugs.forEach(function (k) { n += ((DR.subjects[k] || {}).quiz || []).length; });
     if (!n) return "";
     var maxP = 0; for (var m = 0; m < n; m++) maxP += prize(m);
     var totalP = Math.max(0, q.pence), f = Math.min(1, totalP / maxP), top = 40, bottom = 250, h = (bottom - top) * f, ticks = "";
-    for (var t = 500; t <= maxP; t += 500) { var y = bottom - (bottom - top) * t / maxP; ticks += '<line x1="150" x2="164" y1="' + y.toFixed(1) + '" y2="' + y.toFixed(1) + '" class="jar-tick"/><text x="170" y="' + (y + 5).toFixed(1) + '" class="jar-label">' + pounds(t) + "</text>"; }
+    /* a mark every £5, or every £10 once that would crowd the jar */
+    var tickStep = maxP > 6500 ? 1000 : 500;
+    for (var t = tickStep; t <= maxP; t += tickStep) { var y = bottom - (bottom - top) * t / maxP; ticks += '<line x1="150" x2="164" y1="' + y.toFixed(1) + '" y2="' + y.toFixed(1) + '" class="jar-tick"/><text x="170" y="' + (y + 5).toFixed(1) + '" class="jar-label">' + pounds(t) + "</text>"; }
     var banked = Object.keys(q.banked).length;
     return '<section class="card jar section' + (still ? " still" : "") + '" style="--accent-dark:#F1C40F" aria-labelledby="jar-h"><svg class="jar-svg" viewBox="0 0 230 270" role="img" aria-label="Money jar: ' + pounds(totalP) + " in the jar, " + pounds(maxP) + ' when full">' +
       '<defs><clipPath id="jar-clip"><path d="M40 40 h90 v10 q20 10 20 40 v140 q0 20 -20 20 h-90 q-20 0 -20 -20 v-140 q0 -30 20 -40 z"/></clipPath></defs>' +
       '<g clip-path="url(#jar-clip)"><g class="jar-coins"><rect class="jar-fill" x="0" y="' + (bottom - h) + '" width="170" height="' + h + '"/>' + (h ? '<rect class="jar-shine" x="0" y="' + (bottom - h) + '" width="170" height="6"/>' : "") + "</g></g>" +
       '<path class="jar-glass" d="M40 40 h90 v10 q20 10 20 40 v140 q0 20 -20 20 h-90 q-20 0 -20 -20 v-140 q0 -30 20 -40 z"/>' +
       '<rect class="jar-lid" x="34" y="22" width="102" height="20" rx="6"/>' + ticks + "</svg>" +
-      '<div><h2 id="jar-h">The money jar</h2><p class="jar-total">' + pounds(totalP) + "<small>in the jar so far</small></p>" +
-      "<p>The jar fills from Dougie's Wheel of Fortune. A question you get right for the first time starts at 5p, and every " + STEP + " questions you get right, each right answer is worth 2\u00bdp more. A wrong answer doesn't cost you anything.</p>" +
+      '<div><h2 id="jar-h">' + (JAR.title || "The money jar") + '</h2><p class="jar-total">' + pounds(totalP) + "<small>in the jar so far</small></p>" + (JAR.note ? "<p><strong>" + JAR.note + "</strong></p>" : "") +
+      "<p>The jar fills from " + (JAR.wheel || "Dougie's Wheel of Fortune") + ". A question you get right for the first time starts at 5p, and every " + STEP + " questions you get right, each right answer is worth 2\u00bdp more. A wrong answer doesn't cost you anything.</p>" +
       ladderHtml(banked, n) +
       "<p>So far: " + banked + " of " + n + " questions banked. Bank them all and the jar is full at " + pounds(maxP) + ".</p></div></section>";
   }
@@ -326,7 +346,7 @@
     if (!list.length) return [];
     /* a whole number of rounds, so every subject gets the same number of pockets */
     var out = [];
-    while (out.length < 8) out = out.concat(list);
+    while (out.length < (list.length >= 6 ? 6 : 8)) out = out.concat(list);
     /* Mix goes where it keeps red and black alternating: the middle for an even count, the end for an odd one */
     if (out.length % 2) out.push({ label: "Mix" }); else out.splice(out.length / 2, 0, { label: "Mix" });
     return out;
@@ -375,56 +395,77 @@
       var from = fresh.length && (!done.length || Math.random() >= REPEAT) ? fresh : done.length ? done : pool;
       var pick = from[Math.floor(Math.random() * from.length)], q = pick.q, u = units[pick.slug][q[0]], reg = registryItem(pick.slug), again = !!bk[q[1]];
       lastQ = q[1];
-      var opts = shuffle(q.slice(2, 6));
-      dlg.innerHTML = '<p class="kicker">' + (!pocket.slug ? "Mix: anything. This one is " : "") + (multi || !pocket.slug ? esc(reg.name) + ", " : "") + "Unit " + esc(q[0]) + (u ? ": " + esc(u.title) : "") + '</p><h2 id="wheel-q-h">' + esc(q[1]) + "</h2>" + (again ? '<p class="quiz-again">You\'ve banked this one before, so it\'s practice: nothing to win or lose this time.</p>' : "") +
-        '<div class="quiz-opts">' + opts.map(function (o) { return '<button type="button" class="quiz-opt" data-right="' + (o === q[2] ? "1" : "0") + '">' + esc(o) + "</button>"; }).join("") + "</div>" +
-        '<p class="quiz-result" aria-live="polite"></p><div class="btn-row"><button type="button" class="btn" data-act="again" hidden>Spin again</button><button type="button" class="btn btn-ghost" data-act="close">Close</button></div>';
+      /* A typed question is [unit, question, answer, how]; a choice is [unit, question, right, wrong, wrong, wrong, how?] */
+      var typed = q.length < 6, how = typed ? q[3] : q[6], answer = typed ? q[2].replace(/^~/, "").split("|")[0] : q[2];
+      var opts = typed ? [] : shuffle(q.slice(2, 6));
+      dlg.innerHTML = '<p class="kicker">' + (!pocket.slug ? "Mix: anything. This one is " : "") + (multi || !pocket.slug ? esc(reg.name) + ", " : "") + (/^\d/.test(q[0]) ? "Unit " + esc(q[0]) + (u ? ": " + esc(u.title) : "") : esc(u ? u.title : q[0])) + '</p><h2 id="wheel-q-h">' + esc(q[1]) + "</h2>" + (again ? '<p class="quiz-again">You\'ve banked this one before, so it\'s practice: nothing to win or lose this time.</p>' : "") +
+        (typed ? '<form class="quiz-typed" novalidate><label for="quiz-in">Your answer</label><div class="quiz-row"><input id="quiz-in" class="quiz-in" type="text" autocomplete="off" autocapitalize="off" spellcheck="false"><button type="submit" class="btn">Check</button></div><p class="quiz-tip">Work it out on paper, then type just the answer. Fractions like 3/4 are fine.</p></form>'
+          : '<div class="quiz-opts">' + opts.map(function (o) { return '<button type="button" class="quiz-opt" data-right="' + (o === q[2] ? "1" : "0") + '">' + esc(o) + "</button>"; }).join("") + "</div>") +
+        '<p class="quiz-result" aria-live="polite"></p><p class="quiz-how" hidden></p><div class="btn-row"><button type="button" class="btn" data-act="again" hidden>Spin again</button><button type="button" class="btn btn-ghost" data-act="close">Close</button></div>';
       dlg.showModal();
-      dlg.querySelector(".quiz-opt").focus();
+      dlg.querySelector(typed ? ".quiz-in" : ".quiz-opt").focus();
+      dlg.onsubmit = function (ev) {
+        ev.preventDefault();
+        var inp = dlg.querySelector(".quiz-in"); if (!inp || inp.disabled) return;
+        var res = dlg.querySelector(".quiz-result");
+        if (!inp.value.trim() || isNaN(numOf(inp.value))) { res.textContent = "Type just the number, like 12, 0.5 or 3/4."; res.className = "quiz-result"; inp.focus(); return; }
+        var ok = typedRight(q[2], inp.value);
+        inp.disabled = true; dlg.querySelector(".quiz-typed .btn").disabled = true; inp.classList.add(ok ? "is-right" : "is-wrong");
+        mark(ok);
+      };
       dlg.onclick = function (ev) {
         var act = ev.target.closest("[data-act]");
         if (act) { dlg.close(); if (act.getAttribute("data-act") === "again") btn.click(); return; }
         var b = ev.target.closest(".quiz-opt"); if (!b || dlg.querySelector(".quiz-opt[disabled]")) return;
-        var right = b.getAttribute("data-right") === "1", st = quizStore(), msg;
+        [].forEach.call(dlg.querySelectorAll(".quiz-opt"), function (o) {
+          o.disabled = true;
+          if (o.getAttribute("data-right") === "1") { o.classList.add("is-right"); o.insertAdjacentHTML("afterbegin", '<span class="tag">Right answer</span>'); }
+          else if (o === b) { o.classList.add("is-wrong"); o.insertAdjacentHTML("afterbegin", '<span class="tag">Your answer</span>'); }
+        });
+        mark(b.getAttribute("data-right") === "1");
+      };
+      function mark(right) {
+        var st = quizStore(), msg;
         var before = Object.keys(st.banked).length, win = prize(before);
         if (right && !st.banked[q[1]]) {
           st.banked[q[1]] = true; st.pence += win; msg = "Right! " + pence(win) + " goes in the jar.";
           if ((before + 1) % STEP === 0) msg += " That's " + (before + 1) + " right, so every right answer is now worth " + pence(prize(before + 1)) + ".";
         }
         else if (right) msg = "Right! You've already banked this one, so nothing goes in this time.";
-        else msg = "Not this time, but it hasn't cost you anything. The answer is: " + q[2];
-        store.write("wheel", st);
-        [].forEach.call(dlg.querySelectorAll(".quiz-opt"), function (o) {
-          o.disabled = true;
-          if (o.getAttribute("data-right") === "1") { o.classList.add("is-right"); o.insertAdjacentHTML("afterbegin", '<span class="tag">Right answer</span>'); }
-          else if (o === b) { o.classList.add("is-wrong"); o.insertAdjacentHTML("afterbegin", '<span class="tag">Your answer</span>'); }
-        });
+        else msg = "Not this time, but it hasn't cost you anything. The answer is: " + answer;
+        store.write(JAR.key, st);
         var res = dlg.querySelector(".quiz-result"); res.textContent = msg; res.className = "quiz-result " + (right ? "good" : "bad");
+        if (how) { var hw = dlg.querySelector(".quiz-how"); hw.innerHTML = "<strong>How to do it:</strong> " + esc(how); hw.hidden = false; }
         var again = dlg.querySelector('[data-act="again"]'); again.hidden = false; again.focus();
         var jarEl = document.querySelector(".jar"); if (jarEl) jarEl.outerHTML = jarHtml(true);
         var wp = document.getElementById("wheel-prize"); if (wp) wp.textContent = pence(prize(Object.keys(st.banked).length));
-      };
+      }
     }
+  }
+  function wheelHtml(name) {
+    return '<div class="wheel-wrap"><div class="wheel">' + wheelSvg() + '<button type="button" class="wheel-btn" id="wheel" aria-label="SPIN ' + name + ' for a question">SPIN</button></div><p class="wheel-cap"><strong>' + name + '</strong><br>Tap to spin. Right first time: +<span id="wheel-prize">' + pence(prize(Object.keys(quizStore().banked).length)) + "</span>. Wrong: nothing lost.</p></div>";
   }
 
   /* ---------- hub ---------- */
   function pageHub() {
     var live = (DR.registry || []).filter(function (r) { return r.status === "live"; }).map(function (r) { return r.slug; });
+    var shared = live.filter(function (sl) { return !registryItem(sl).jar; });
     loadSubjects(live, function () {
-      POCKETS = wheelPockets(live);
+      JAR = { key: "wheel", slugs: shared };
+      POCKETS = wheelPockets(shared);
       var cards = (DR.registry || []).map(function (r) {
         var subj = DR.subjects[r.slug], liveCard = r.status === "live" && subj;
-        var reports = liveCard ? subj.units.reduce(function (n, u) { return n + u.reports.length; }, 0) : 0;
+        var reports = liveCard ? subj.units.reduce(function (n, u) { return n + (u.reports || []).length; }, 0) : 0;
         return '<article class="card subject-card" style="--accent-dark:' + r.accent + ";--tint:" + r.tint + '"><h2>' + esc(r.name) + "</h2>" +
-          (liveCard ? "<p>" + esc(r.blurb) + ". " + reports + " reports in the notebook" + (subj.notebook ? "" : "s") + ".</p>" + '<a class="btn" href="' + BASE + "/" + r.slug + '/">Open ' + esc(r.name) + "</a>"
+          (liveCard ? "<p>" + esc(r.blurb) + ". " + (r.jar ? subj.quiz.length + " questions on its own wheel, with its own money jar: " + pounds(earned(Object.keys(store.read(r.jar).banked || {}).length)) + " so far." : reports + " reports in the notebook" + (subj.notebook ? "" : "s") + ".") + "</p>" + '<a class="btn" href="' + BASE + "/" + r.slug + '/">Open ' + esc(r.name) + "</a>"
             : '<p><span class="chip">Coming soon</span></p><p>Not yet. Enjoy it while it lasts.</p>') + "</article>";
       }).join("");
       frame("", null,
-        '<div class="hero"><div><h1>Right then, Dougie.</h1><p class="lede">This is your revision lab. The plan and the money jar are all in here, so there\'s nothing to work out. Do each slot in order, tick each part off as you go, and take your time.</p></div><div class="wheel-wrap"><div class="wheel">' + wheelSvg() + '<button type="button" class="wheel-btn" id="wheel" aria-label="SPIN Dougie\'s Wheel of Fortune for a question">SPIN</button></div><p class="wheel-cap"><strong>Dougie\'s Wheel of Fortune</strong><br>Tap to spin. Right first time: +<span id="wheel-prize">' + pence(prize(Object.keys(quizStore().banked).length)) + '</span>. Wrong: nothing lost.</p></div></div>' +
+        '<div class="hero"><div><h1>Right then, Dougie.</h1><p class="lede">This is your revision lab. The plan and the money jar are all in here, so there\'s nothing to work out. Do each slot in order, tick each part off as you go, and take your time.</p></div>' + wheelHtml("Dougie's Wheel of Fortune") + "</div>" +
         '<dialog class="quiz" id="wheel-q" aria-labelledby="wheel-q-h"></dialog>' +
         '<div id="hub-now" aria-live="polite"></div>' +
         jarHtml() +
-        '<section class="section" aria-labelledby="subjects-h"><h2 id="subjects-h">Your subjects</h2><div class="grid grid-3">' + cards + "</div></section>");
+        '<section class="section" aria-labelledby="subjects-h"><h2 id="subjects-h">Your subjects</h2><div class="grid grid-4">' + cards + "</div></section>");
       function tick() {
         var box = document.getElementById("hub-now"); if (!box) return;
         var n = nextSession(live), html = "";
@@ -436,7 +477,7 @@
         if (box.getAttribute("data-html") !== html) { box.innerHTML = html; box.setAttribute("data-html", html); }
       }
       tick(); setInterval(tick, 1000);
-      wheelInit(live);
+      wheelInit(shared);
     });
   }
 
@@ -449,6 +490,7 @@
         "<h1>" + esc(reg.name) + '</h1><div class="card" style="--accent-dark:' + reg.accent + ";--tint:" + reg.tint + '"><p><span class="chip">Coming soon</span></p><p>' + esc(reg.name) + " is on its way, Dougie. You've got a bit of time before this one lands.</p></div>", reg.name);
       return;
     }
+    if (reg.jar) return pageMaths(slug, reg);
     loadSubjects([slug], function () {
       var subj = DR.subjects[slug]; if (!subj) return pageNotFound();
       var saved = store.read(slug).reports || {};
@@ -988,6 +1030,34 @@
       res.textContent = show ? "Here are the answers. Compare them with yours and work out where it went wrong." : allRight ? "All " + cells + " right. Nice work." : right + " of " + cells + " right. The red boxes need another look.";
       res.className = "act-result " + (show ? "" : allRight ? "good" : "bad");
       save(i, show ? { v: vals(box), shown: true } : { v: vals(box), ok: allRight || ((store.read(slug).sessions[date].practice || {})[i] || {}).ok || false });
+    });
+  }
+
+  /* ---------- Maths: no notebook or sessions; its own wheel and jar, and where his Sparx papers lost marks ---------- */
+  function pageMaths(slug, reg) {
+    loadSubjects([slug], function () {
+      var subj = DR.subjects[slug]; if (!subj) return pageNotFound();
+      JAR = { key: reg.jar, slugs: [slug], title: "The maths money jar", wheel: "Dougie's Maths Wheel of Fortune", note: "This jar is just for maths. It's separate from the main jar on the hub." };
+      POCKETS = wheelPockets([slug]);
+      var papers = (subj.papers || []).map(function (p) {
+        var lost = p.rows.filter(function (r) { return r[2] === null || r[2] < r[3]; });
+        return '<details class="card paper-res"><summary><strong>' + esc(p.name) + "</strong>: " + p.got + " out of " + p.of + ". " + lost.length + " questions to get marks back on.</summary><ul class=\"lost\">" + lost.map(function (r) {
+          return "<li><strong>Q" + esc(r[0]) + "</strong> " + esc(r[1]) + "<span>" + (r[2] === null ? "0 out of " + r[3] + " (probably left blank)" : r[2] + " out of " + r[3]) + ". Sparx code " + esc(r[4]) + "</span></li>";
+        }).join("") + "</ul></details>";
+      }).join("");
+      frame(slug, [{ href: BASE + "/", name: "Hub" }, { name: subj.name }],
+        '<div class="hero"><div><h1>' + esc(subj.heading) + '</h1><p class="lede">' + esc(subj.paper) + "</p></div>" + wheelHtml("Dougie's Maths Wheel of Fortune") + "</div>" +
+        '<dialog class="quiz" id="wheel-q" aria-labelledby="wheel-q-h"></dialog>' +
+        '<div class="panel section"><h2>How the maths wheel works</h2>' +
+        "<p>Spin the wheel and it lands on a topic: Number, Algebra, Ratio, Geometry, Probability or Statistics. Green is Mix, which can be any topic.</p>" +
+        "<p>Most questions want you to work the answer out on paper and type it in, like the real exam. Some give you four answers to pick from.</p>" +
+        "<p>Have a pen, paper and your calculator ready. If a question says no calculator, don't use one: that's practice for Paper 1.</p>" +
+        "<p>After every question you'll see how to do it. Read it, even when you got it right.</p>" +
+        "<p>Can't remember how to do something? Have a go first. Your CGP book is a last resort: look the topic up in its index. Write down anything you couldn't remember.</p>" +
+        "<p>You can ask Dad for help wherever and whenever you want, as long as he's not in a meeting.</p></div>" +
+        jarHtml() +
+        '<section class="section" aria-labelledby="papers-h"><h2 id="papers-h">Your three Sparx papers: where to get marks back</h2><p>Each list shows the questions where you lost marks, in the order they came on the paper. Start at the top: the early questions are the easier ones, so that\'s where the quickest marks are. A question left blank always scores 0, so always write something.</p>' + papers + "</section>", subj.name);
+      wheelInit([slug]);
     });
   }
 

@@ -15,7 +15,7 @@ DR.registry = [
     accent: "#16A085",
     tint: "#DEF2EE",
     status: "live",
-    blurb: "AQA GCSE Combined Science (Trilogy), Paper 1, Higher tier"
+    blurb: "AQA GCSE Combined Science (Trilogy), Paper 1, Foundation tier"
   },
   {
     slug: "english-language",
@@ -36,5 +36,16 @@ DR.registry = [
     tint: "#F9E7DB",
     status: "live",
     blurb: "OCR GCSE Computer Science (J277), Paper 1 and Paper 2"
+  },
+  {
+    /* jar: Maths has its own wheel and money jar (this storage key), kept apart from the hub's */
+    slug: "maths",
+    name: "Maths",
+    wheel: "Maths",
+    accent: "#8E44AD",
+    tint: "#EEE3F3",
+    status: "live",
+    jar: "maths-wheel",
+    blurb: "Pearson Edexcel GCSE Mathematics (1MA1), Higher tier"
   }
 ];

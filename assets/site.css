@@ -91,10 +91,12 @@ main { padding: var(--space-5) 0 var(--space-7); }
 /* Cards */
 .card { background: var(--panel); color: var(--ink); border-radius: var(--radius); padding: var(--space-5); border: 1px solid var(--line); border-left: 8px solid var(--accent-dark); }
 .grid { display: grid; gap: var(--space-4); grid-template-columns: minmax(0, 1fr); }
-@media (min-width: 700px) { .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (min-width: 700px) { .grid-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); } .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
 .chip { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 12px; border-radius: var(--pill); background: var(--tint); color: var(--midnight); font-weight: 700; font-size: var(--step--1); }
 .subject-card h2 { margin-bottom: var(--space-2); font-size: var(--step-2); }
-.subject-card .btn { margin-top: var(--space-2); }
+.subject-card { display: flex; flex-direction: column; align-items: flex-start; }
+.subject-card .btn { margin-top: auto; }
+.subject-card p { margin-bottom: var(--space-3); }
 .subject-card p { color: var(--ink-2); }
 
 /* Mission control and banners */
@@ -131,7 +133,7 @@ main { padding: var(--space-5) 0 var(--space-7); }
 @media (prefers-reduced-motion: no-preference) { .jar-coins { animation: jar-up 1.2s ease-out; } }
 @keyframes jar-up { from { transform: scaleY(0); } }
 /* Dougie's Wheel of Fortune: a portal-tech roulette wheel. Pockets in Pomegranate and Midnight with Clouds labels (5.44 and 9.57), one Emerald Mix pocket with Midnight label (5.23) */
-.wheel-wrap { flex: none; display: flex; flex-direction: column; align-items: center; gap: var(--space-2); margin: 0 auto; }
+.wheel-wrap { flex: none; max-width: 100%; display: flex; flex-direction: column; align-items: center; gap: var(--space-2); margin: 0 auto; }
 .wheel { --w: 240px; width: var(--w); aspect-ratio: 1; position: relative; }
 .wheel-btn { position: absolute; inset: 0; border: 0; border-radius: 50%; background: none; cursor: pointer; padding: 0; color: #2C3E50; font-family: "Exo 2", sans-serif; font-weight: 800; font-size: calc(var(--w) * .095); }
 .wheel svg { width: 100%; height: 100%; display: block; overflow: visible; filter: drop-shadow(0 0 16px rgba(46, 204, 113, .55)); }
@@ -167,6 +169,17 @@ main { padding: var(--space-5) 0 var(--space-7); }
 .quiz-opt .tag { display: block; font-size: var(--step--1); font-weight: 700; text-transform: uppercase; letter-spacing: .08em; }
 .quiz-result { font-weight: 700; font-size: var(--step-1); margin: 0 0 var(--space-3); }
 .quiz-result:empty { display: none; }
+.quiz-typed label { display: block; font-weight: 600; margin-bottom: var(--space-2); }
+.quiz-row { display: flex; flex-wrap: wrap; gap: var(--space-2); }
+.quiz-in { flex: 1 1 10em; min-width: 0; min-height: var(--tap); padding: 8px 14px; font: inherit; font-size: var(--step-1); border-radius: var(--radius); border: 2px solid var(--ink-2); background: var(--space); color: var(--ink); }
+.quiz-in:focus-visible { outline: 3px solid var(--portal); outline-offset: 2px; }
+.quiz-in.is-right { border-color: #2ECC71; } .quiz-in.is-wrong { border-color: #E74C3C; }
+.quiz-tip { color: var(--ink-2); font-size: var(--step--1); margin: var(--space-2) 0 var(--space-3); }
+.quiz-how { margin: 0 0 var(--space-3); padding: var(--space-3); border-left: 4px solid var(--portal); border-radius: var(--radius-s); background: var(--space); }
+.paper-res { margin-bottom: var(--space-3); }
+.paper-res summary { cursor: pointer; min-height: var(--tap); }
+.lost { list-style: none; margin: var(--space-3) 0 0; padding: 0; display: grid; gap: var(--space-2); }
+.lost span { display: block; color: var(--ink-2); font-size: var(--step--1); }
 .jar.still .jar-coins { animation: none; }
 @media (min-width: 700px) { .wheel { --w: 280px; } }
 @media (max-width: 699px) { .jar { grid-template-columns: 1fr; } .jar-svg { max-width: 200px; margin: 0 auto; } }
