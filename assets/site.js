@@ -353,13 +353,13 @@
   function rewardMarks(n) { var out = []; for (var m = JAR.rewards.every; m <= n; m += JAR.rewards.every) out.push(m); return out; }
   function cap(t) { t = String(t || ""); return t.charAt(0).toUpperCase() + t.slice(1); }
   /* Lucky dip entries are [prize, weight, short label, once only, in to start with, cost (0 free, 1 cheap, 2 dear)]. Dad ticks which are in on the prizes page
-     (saved under "maths-prizes"). Behind the scenes the dearer treats have a low weight, so they come up less often, and a
-     once-only prize drops out after it's been won. The wheel itself always shows equal slices. */
+     (saved under "maths-prizes"). Behind the scenes the dearer treats have a low weight, so they come up less often, and every
+     prize drops out once it's been won (Dad's rule: nothing comes up twice). The wheel itself always shows equal slices. */
   function dipChance(w) { return w < 1 ? "very rare" : w <= 1 ? "rare" : w <= 2 ? "not so common" : "common"; }
   function dipOn(d) { var on = (store.read("maths-prizes").on || {})[d[0]]; return on === undefined ? !!d[4] : !!on; }
   function dipPool(dip, st) {
     var won = {}; Object.keys(st.rewards || {}).forEach(function (k) { won[st.rewards[k].prize] = 1; });
-    return dip.map(function (d, i) { return i; }).filter(function (i) { return dipOn(dip[i]) && !(dip[i][3] && won[dip[i][0]]); });
+    return dip.map(function (d, i) { return i; }).filter(function (i) { return dipOn(dip[i]) && !won[dip[i][0]]; });
   }
   /* Sounds for the lucky dip, made in the browser: a tick each time a slice passes the pointer, and a fanfare at the end */
   function dipSound() {
@@ -422,13 +422,13 @@
     var claims = marks.map(function (m, i) {
       var k = i + 1; if (banked < m || got[k]) return "";
       return '<div class="stuck reward-claim"><p class="stuck-h">You\'ve got ' + m + " right! Pick your reward</p>" +
-        '<div class="btn-row"><button type="button" class="btn btn-big" data-claim="' + k + '" data-pick="fixed">' + esc(cap(rw.fixed)) + '</button><button type="button" class="btn btn-big" data-claim="' + k + '" data-pick="dip"' + (pool.length ? "" : " disabled") + '>Lucky dip</button></div>' + (pool.length ? "" : "<p>The lucky dip is empty until Dad picks some prizes.</p>") +
+        '<div class="btn-row"><button type="button" class="btn btn-big" data-claim="' + k + '" data-pick="fixed">' + esc(cap(rw.fixed)) + '</button><button type="button" class="btn btn-big" data-claim="' + k + '" data-pick="dip"' + (pool.length ? "" : " disabled") + '>Lucky dip</button></div>' + (pool.length ? "" : "<p>There's nothing left in the lucky dip. Ask Dad to add some more prizes.</p>") +
         "<p>Once you've picked, it's yours: no swapping.</p></div>";
     }).join("");
     var won = Object.keys(got).length ? '<div class="stuck send-dad"><p class="stuck-h">Your rewards</p><ul>' + Object.keys(got).sort().map(function (k) { return "<li>Reward " + k + ": <strong>" + esc(cap(got[k].prize)) + "</strong>" + (got[k].pick === "dip" ? " (lucky dip)" : "") + "</li>"; }).join("") + '</ul><p>Tell Dad so he can sort it out.</p><button type="button" class="btn btn-big" data-tell="1">Tell Dad about my rewards</button><p class="send-note" aria-live="polite"></p></div>' : "";
     return '<div><h2 id="jar-h">' + JAR.title + '</h2><p class="jar-total">' + banked + "<small>of " + n + " questions banked</small></p>" + (JAR.note ? "<p><strong>" + JAR.note + "</strong></p>" : "") +
       "<p>Instead of money, this jar is full of rewards. It fills from " + JAR.wheel + ": every question you get right for the first time goes in. Every " + rw.every + " questions you get right, you win a reward. A wrong answer doesn't cost you anything.</p>" +
-      "<p>For each reward you choose: " + esc(rw.fixed) + ", or a lucky dip." + (pool.length ? " Right now the lucky dip could be:</p><ul class=\"dip-list\">" + pool.map(function (i) { return "<li>" + esc(cap(rw.dip[i][0])) + "</li>"; }).join("") + "</ul><p><a href=\"" + BASE + "/maths/lucky-dip/\">Try a demo spin of the lucky dip</a></p>" : "</p>") +
+      "<p>For each reward you choose: " + esc(rw.fixed) + ", or a lucky dip. Each lucky dip prize can only be won once." + (pool.length ? " Right now the lucky dip could be:</p><ul class=\"dip-list\">" + pool.map(function (i) { return "<li>" + esc(cap(rw.dip[i][0])) + "</li>"; }).join("") + "</ul><p><a href=\"" + BASE + "/maths/lucky-dip/\">Try a demo spin of the lucky dip</a></p>" : "</p>") +
       claims + won +
       '<p class="muted"><a href="' + BASE + '/maths/prizes/">For Dad and Mum: choose what goes in the lucky dip</a></p>' +
       '<div class="ladder"><h3>' + marks.length + ' rewards to win</h3><p class="ladder-next">' + (next ? "Get <strong>" + (next - banked) + " more right</strong> for your next reward." : "That's every reward won. Brilliant work.") + "</p>" +
@@ -1255,7 +1255,7 @@
         box.querySelector(".dip-four").textContent = "On the wheel: " + four.map(function (i) { return cap(dip[i][0]); }).join(", ");
         box.querySelector(".dip-wheel").innerHTML = dipSvg(dip, four);
       }
-      if (!pool.length) { res.textContent = "The lucky dip is empty until Dad picks some prizes."; return; }
+      if (!pool.length) { res.textContent = "There's nothing left in the lucky dip. Ask Dad to add some more prizes."; return; }
       setUp();
       btn.addEventListener("click", function () {
         if (btn.disabled) return;
@@ -1278,12 +1278,12 @@
       var won = {}, st = store.read(registryItem(slug).jar); Object.keys(st.rewards || {}).forEach(function (k) { won[st.rewards[k].prize] = 1; });
       var rows = rw.dip.map(function (d, i) {
         var id = "prize-" + i;
-        return '<li class="prize-row"><input type="checkbox" id="' + id + '" data-prize="' + i + '"' + (dipOn(d) ? " checked" : "") + (canEdit ? "" : " disabled") + '><label for="' + id + '"><strong>' + esc(cap(d[0])) + "</strong><span>" + cap(dipChance(d[1])) + (d[3] ? ", can only be won once" + (won[d[0]] ? " (already won)" : "") : "") + "</span></label></li>";
+        return '<li class="prize-row"><input type="checkbox" id="' + id + '" data-prize="' + i + '"' + (dipOn(d) ? " checked" : "") + (canEdit ? "" : " disabled") + '><label for="' + id + '"><strong>' + esc(cap(d[0])) + "</strong><span>" + cap(dipChance(d[1])) + (won[d[0]] ? ", already won" : "") + "</span></label></li>";
       }).join("");
       frame(slug, [{ href: BASE + "/", name: "Hub" }, { href: BASE + "/" + slug + "/", name: subj.name }, { name: "Lucky dip prizes" }],
         '<h1>Lucky dip prizes</h1><p class="lede">Tick the prizes that can come out of the maths lucky dip. Changes save straight away and show on every device.</p>' +
         (canEdit ? "" : '<p class="note"><strong>Only Dad or Mum can change these. Sign in with their Google account to make changes.</strong></p>') +
-        "<p>Behind the scenes, rare prizes come up least often and common ones most often. Prizes marked can only be won once drop out after he's won them. The wheel he sees always has equal slices.</p>" +
+        "<p>Behind the scenes, rare prizes come up least often and common ones most often. Every prize can only be won once: after he's won it, it drops out of the lucky dip. The wheel he sees always has equal slices.</p>" +
         '<section class="card section"><ul class="prizes">' + rows + "</ul></section>" +
         '<p class="muted">The other choice at every reward is ' + esc(rw.fixed) + ".</p>", "Lucky dip prizes");
       if (!canEdit) return;
