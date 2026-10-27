@@ -428,7 +428,7 @@
     var won = Object.keys(got).length ? '<div class="stuck send-dad"><p class="stuck-h">Your rewards</p><ul>' + Object.keys(got).sort().map(function (k) { return "<li>Reward " + k + ": <strong>" + esc(cap(got[k].prize)) + "</strong>" + (got[k].pick === "dip" ? " (lucky dip)" : "") + "</li>"; }).join("") + '</ul><p>Tell Dad so he can sort it out.</p><button type="button" class="btn btn-big" data-tell="1">Tell Dad about my rewards</button><p class="send-note" aria-live="polite"></p></div>' : "";
     return '<div><h2 id="jar-h">' + JAR.title + '</h2><p class="jar-total">' + banked + "<small>of " + n + " questions banked</small></p>" + (JAR.note ? "<p><strong>" + JAR.note + "</strong></p>" : "") +
       "<p>Instead of money, this jar is full of rewards. It fills from " + JAR.wheel + ": every question you get right for the first time goes in. Every " + rw.every + " questions you get right, you win a reward. A wrong answer doesn't cost you anything.</p>" +
-      "<p>For each reward you choose: " + esc(rw.fixed) + ", or a lucky dip. Each lucky dip prize can only be won once." + (pool.length ? " Right now the lucky dip could be:</p><ul class=\"dip-list\">" + pool.map(function (i) { return "<li>" + esc(cap(rw.dip[i][0])) + "</li>"; }).join("") + "</ul><p><a href=\"" + BASE + "/maths/lucky-dip/\">Try a demo spin of the lucky dip</a></p>" : "</p>") +
+      "<p>For each reward you choose: " + esc(rw.fixed) + ", or a lucky dip. Each lucky dip prize can only be won once, and none of the prizes can be swapped for cash." + (pool.length ? " Right now the lucky dip could be:</p><ul class=\"dip-list\">" + pool.map(function (i) { return "<li>" + esc(cap(rw.dip[i][0])) + "</li>"; }).join("") + "</ul><p><a href=\"" + BASE + "/maths/lucky-dip/\">Try a demo spin of the lucky dip</a></p>" : "</p>") +
       claims + won +
       '<p class="muted"><a href="' + BASE + '/maths/prizes/">For Dad and Mum: choose what goes in the lucky dip</a></p>' +
       '<div class="ladder"><h3>' + marks.length + ' rewards to win</h3><p class="ladder-next">' + (next ? "Get <strong>" + (next - banked) + " more right</strong> for your next reward." : "That's every reward won. Brilliant work.") + "</p>" +
@@ -1247,7 +1247,7 @@
         "<h1>Lucky dip demo</h1><p class=\"lede\">This is what happens when you pick the lucky dip for a reward. Have a go: it's only a demo, so you won't win anything and nothing is saved.</p>" +
         '<section class="card section dip-demo" aria-labelledby="dip-h"><h2 id="dip-h">Lucky dip</h2><p class="dip-four"></p><div class="dip-wheel"></div><p class="quiz-result" aria-live="polite"></p>' +
         '<div class="btn-row"><button type="button" class="btn btn-big" id="dip-demo"' + (pool.length ? "" : " disabled") + ">Spin the demo</button></div></section>" +
-        "<p>Every " + subj.rewards.every + " maths questions you get right, you win a reward. You can pick " + esc(subj.rewards.fixed) + ", or a real spin of this wheel. Each spin shows four prizes from the lucky dip.</p>" +
+        "<p>Every " + subj.rewards.every + " maths questions you get right, you win a reward. You can pick " + esc(subj.rewards.fixed) + ", or a real spin of this wheel. Each spin shows four prizes from the lucky dip. None of the prizes can be swapped for cash.</p>" +
         '<p><a href="' + BASE + "/" + slug + '/">Back to Maths</a></p>', "Lucky dip demo");
       var box = document.querySelector(".dip-demo"), btn = document.getElementById("dip-demo"), res = box.querySelector(".quiz-result");
       function setUp() {
@@ -1283,7 +1283,7 @@
       frame(slug, [{ href: BASE + "/", name: "Hub" }, { href: BASE + "/" + slug + "/", name: subj.name }, { name: "Lucky dip prizes" }],
         '<h1>Lucky dip prizes</h1><p class="lede">Tick the prizes that can come out of the maths lucky dip. Changes save straight away and show on every device.</p>' +
         (canEdit ? "" : '<p class="note"><strong>Only Dad or Mum can change these. Sign in with their Google account to make changes.</strong></p>') +
-        "<p>Behind the scenes, rare prizes come up least often and common ones most often. Every prize can only be won once: after he's won it, it drops out of the lucky dip. The wheel he sees always has equal slices.</p>" +
+        "<p>Behind the scenes, rare prizes come up least often and common ones most often. Every prize can only be won once: after he's won it, it drops out of the lucky dip. The wheel he sees always has equal slices. None of the prizes can be swapped for cash.</p>" +
         '<section class="card section"><ul class="prizes">' + rows + "</ul></section>" +
         '<p class="muted">The other choice at every reward is ' + esc(rw.fixed) + ".</p>", "Lucky dip prizes");
       if (!canEdit) return;
