@@ -347,31 +347,37 @@
   /* Maths has a reward jar instead of money: a reward every "every" right answers (100). These are the counts that win one. */
   function rewardMarks(n) { var out = []; for (var m = JAR.rewards.every; m <= n; m += JAR.rewards.every) out.push(m); return out; }
   function cap(t) { t = String(t || ""); return t.charAt(0).toUpperCase() + t.slice(1); }
-  /* Lucky dip entries are [prize, weight]: the dearer treats have a low weight, so they come up less often */
-  function dipChance(w) { return w <= 1 ? "rare" : w <= 2 ? "not so common" : "common"; }
-  /* The lucky dip wheel, like the Gran Turismo 7 roulette: each spin shows four prizes, each slice sized by its chance (so the dearer ones are thin), and lands on the one already drawn. Labels on the left half are flipped so none read upside down. */
+  /* Lucky dip entries are [prize, weight, short label, once only, in to start with]. Dad ticks which are in on the prizes page
+     (saved under "maths-prizes"). Behind the scenes the dearer treats have a low weight, so they come up less often, and a
+     once-only prize drops out after it's been won. The wheel itself always shows equal slices. */
+  function dipChance(w) { return w < 1 ? "very rare" : w <= 1 ? "rare" : w <= 2 ? "not so common" : "common"; }
+  function dipOn(d) { var on = (store.read("maths-prizes").on || {})[d[0]]; return on === undefined ? !!d[4] : !!on; }
+  function dipPool(dip, st) {
+    var won = {}; Object.keys(st.rewards || {}).forEach(function (k) { won[st.rewards[k].prize] = 1; });
+    return dip.map(function (d, i) { return i; }).filter(function (i) { return dipOn(dip[i]) && !(dip[i][3] && won[dip[i][0]]); });
+  }
+  function dipDraw(dip, pool) {
+    var total = pool.reduce(function (t, i) { return t + dip[i][1]; }, 0), r = Math.random() * total;
+    for (var k = 0; k < pool.length; k++) { r -= dip[pool[k]][1]; if (r < 0) return pool[k]; }
+    return pool[pool.length - 1];
+  }
+  /* The wheel, like the Gran Turismo 7 roulette: four prizes from the dip (always the dearest one still in, to tempt him), equal slices, landing on the one already drawn */
   var DIP_COLOURS = [["#C0392B", "#FFFFFF"], ["#F1C40F", "#2C3E50"], ["#8E44AD", "#FFFFFF"], ["#1ABC9C", "#2C3E50"]];
-  function dipFour(dip, w) {
-    var rarest = dip.reduce(function (m, d, i) { return d[1] < dip[m][1] ? i : m; }, 0);
-    var others = shuffle(dip.map(function (d, i) { return i; }).filter(function (i) { return i !== w && i !== rarest; }));
+  function dipFour(dip, pool, w) {
+    var rarest = pool.reduce(function (m, i) { return dip[i][1] < dip[m][1] ? i : m; }, pool[0]);
+    var others = shuffle(pool.filter(function (i) { return i !== w && i !== rarest; }));
     return shuffle([w].concat(w === rarest ? others.slice(0, 3) : [rarest].concat(others.slice(0, 2))));
   }
   function dipSvg(dip, four) {
-    var total = four.reduce(function (t, i) { return t + dip[i][1]; }, 0), at = 0, out = "", spans = {};
+    var size = 360 / four.length, out = "";
     four.forEach(function (idx, i) {
-      var size = 360 * dip[idx][1] / total, c = DIP_COLOURS[i], R = 92;
+      var at = i * size, c = DIP_COLOURS[i], R = 92, mid = at + size / 2;
       var a0 = (at - 90) * Math.PI / 180, a1 = (at + size - 90) * Math.PI / 180;
       var p = function (a) { return (100 + R * Math.cos(a)).toFixed(2) + " " + (100 + R * Math.sin(a)).toFixed(2); };
-      out += '<path d="M100 100 L' + p(a0) + " A" + R + " " + R + " 0 " + (size > 180 ? 1 : 0) + " 1 " + p(a1) + 'z" fill="' + c[0] + '" stroke="#2C3E50" stroke-width="1.5"/>' +
-        '<g transform="rotate(' + (at + size / 2) + ' 100 100)"><text x="100" y="45" transform="rotate(' + (at + size / 2 > 180 ? 90 : -90) + ' 100 45)" class="dip-label" fill="' + c[1] + '">' + esc(dip[idx][2] || dip[idx][0]) + "</text></g>";
-      spans[idx] = [at, size]; at += size;
+      out += (four.length === 1 ? '<circle cx="100" cy="100" r="92" fill="' + c[0] + '"/>' : '<path d="M100 100 L' + p(a0) + " A" + R + " " + R + " 0 " + (size > 180 ? 1 : 0) + " 1 " + p(a1) + 'z" fill="' + c[0] + '" stroke="#2C3E50" stroke-width="1.5"/>') +
+        '<g transform="rotate(' + mid + ' 100 100)"><text x="100" y="45" transform="rotate(' + (mid > 180 ? 90 : -90) + ' 100 45)" class="dip-label" fill="' + c[1] + '"' + ((dip[idx][2] || "").length > 9 ? ' font-size="9.5"' : "") + ">" + esc(dip[idx][2] || dip[idx][0]) + "</text></g>";
     });
-    return { spans: spans, svg: '<svg viewBox="0 0 200 200" aria-hidden="true" focusable="false"><circle cx="100" cy="100" r="97" class="wheel-rim"/><g class="dip-spin">' + out + '<circle cx="100" cy="100" r="16" class="wheel-hub"/></g><path d="M91 0 L109 0 L100 20 z" class="wheel-pointer"/></svg>' };
-  }
-  function dipDraw(dip) {
-    var total = dip.reduce(function (t, d) { return t + d[1]; }, 0), r = Math.random() * total;
-    for (var i = 0; i < dip.length; i++) { r -= dip[i][1]; if (r < 0) return i; }
-    return dip.length - 1;
+    return '<svg viewBox="0 0 200 200" aria-hidden="true" focusable="false"><circle cx="100" cy="100" r="97" class="wheel-rim"/><g class="dip-spin">' + out + '<circle cx="100" cy="100" r="16" class="wheel-hub"/></g><path d="M91 0 L109 0 L100 20 z" class="wheel-pointer"/></svg>';
   }
   function rewardsHtml(q, banked, n) {
     var rw = JAR.rewards, marks = rewardMarks(n), got = q.rewards || {}, next = marks.filter(function (m) { return banked < m; })[0], from = next ? (marks[marks.indexOf(next) - 1] || 0) : 0;
@@ -379,17 +385,19 @@
       var k = i + 1, c = got[k];
       return '<li class="rung' + (banked >= m ? " is-past" : next === m ? " is-now" : "") + '"><span class="rung-band">' + m + ' right</span><span class="rung-prize">' + (c ? esc(cap(c.prize)) : banked >= m ? "Ready to pick" : "Reward " + k) + "</span>" + (next === m ? '<span class="rung-here">Next</span>' : "") + "</li>";
     }).join("");
+    var pool = dipPool(rw.dip, q);
     var claims = marks.map(function (m, i) {
       var k = i + 1; if (banked < m || got[k]) return "";
       return '<div class="stuck reward-claim"><p class="stuck-h">You\'ve got ' + m + " right! Pick your reward</p>" +
-        '<div class="btn-row"><button type="button" class="btn btn-big" data-claim="' + k + '" data-pick="fixed">' + esc(cap(rw.fixed)) + '</button><button type="button" class="btn btn-big" data-claim="' + k + '" data-pick="dip">Lucky dip</button></div>' +
+        '<div class="btn-row"><button type="button" class="btn btn-big" data-claim="' + k + '" data-pick="fixed">' + esc(cap(rw.fixed)) + '</button><button type="button" class="btn btn-big" data-claim="' + k + '" data-pick="dip"' + (pool.length ? "" : " disabled") + '>Lucky dip</button></div>' + (pool.length ? "" : "<p>The lucky dip is empty until Dad picks some prizes.</p>") +
         "<p>Once you've picked, it's yours: no swapping.</p></div>";
     }).join("");
     var won = Object.keys(got).length ? '<div class="stuck send-dad"><p class="stuck-h">Your rewards</p><ul>' + Object.keys(got).sort().map(function (k) { return "<li>Reward " + k + ": <strong>" + esc(cap(got[k].prize)) + "</strong>" + (got[k].pick === "dip" ? " (lucky dip)" : "") + "</li>"; }).join("") + '</ul><p>Tell Dad so he can sort it out.</p><button type="button" class="btn btn-big" data-tell="1">Tell Dad about my rewards</button><p class="send-note" aria-live="polite"></p></div>' : "";
     return '<div><h2 id="jar-h">' + JAR.title + '</h2><p class="jar-total">' + banked + "<small>of " + n + " questions banked</small></p>" + (JAR.note ? "<p><strong>" + JAR.note + "</strong></p>" : "") +
       "<p>Instead of money, this jar is full of rewards. It fills from " + JAR.wheel + ": every question you get right for the first time goes in. Every " + rw.every + " questions you get right, you win a reward. A wrong answer doesn't cost you anything.</p>" +
-      "<p>For each reward you choose: " + esc(rw.fixed) + ", or a lucky dip. The lucky dip is one of these:</p><ul class=\"dip-list\">" + rw.dip.map(function (d) { return "<li>" + esc(cap(d[0])) + " <span class=\"muted\">(" + dipChance(d[1]) + ")</span></li>"; }).join("") + "</ul>" +
+      "<p>For each reward you choose: " + esc(rw.fixed) + ", or a lucky dip." + (pool.length ? " Right now the lucky dip could be:</p><ul class=\"dip-list\">" + pool.map(function (i) { return "<li>" + esc(cap(rw.dip[i][0])) + "</li>"; }).join("") + "</ul>" : "</p>") +
       claims + won +
+      '<p class="muted"><a href="' + BASE + '/maths/prizes/">For Dad and Mum: choose what goes in the lucky dip</a></p>' +
       '<div class="ladder"><h3>' + marks.length + ' rewards to win</h3><p class="ladder-next">' + (next ? "Get <strong>" + (next - banked) + " more right</strong> for your next reward." : "That's every reward won. Brilliant work.") + "</p>" +
       (next ? '<div class="ladder-bar" role="progressbar" aria-label="Right answers towards the next reward" aria-valuemin="0" aria-valuemax="' + (next - from) + '" aria-valuenow="' + (banked - from) + '"><i style="width:' + ((banked - from) / (next - from) * 100).toFixed(1) + '%"></i></div>' : "") +
       '<ol class="rungs">' + rungs + "</ol></div></div>";
@@ -1156,18 +1164,19 @@
           var k = c.getAttribute("data-claim"), pick = c.getAttribute("data-pick"), dip = subj.rewards.dip;
           st.rewards = st.rewards || {}; if (st.rewards[k]) return;
           /* the prize is drawn and saved before the wheel spins, so closing the page can't re-roll it */
-          var w = pick === "dip" ? dipDraw(dip) : -1;
+          var pool = dipPool(dip, st); if (pick === "dip" && !pool.length) return;
+          var w = pick === "dip" ? dipDraw(dip, pool) : -1;
           st.rewards[k] = { pick: pick, prize: pick === "fixed" ? subj.rewards.fixed : dip[w][0], at: Date.now() };
           store.write(JAR.key, st);
           var done = function () { document.querySelector(".jar").outerHTML = jarHtml(true); var tb = document.querySelector("[data-tell]"); if (tb) tb.focus(); };
           if (w < 0) return done();
           var dd = document.getElementById("dip-q"), still = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-          var four = dipFour(dip, w), ds = dipSvg(dip, four);
-          dd.innerHTML = '<p class="kicker">Reward ' + k + '</p><h2 id="dip-h">Lucky dip</h2><p class="dip-four">On the wheel: ' + four.map(function (i) { return esc(cap(dip[i][0])); }).join(", ") + '</p><div class="dip-wheel">' + ds.svg + '</div><p class="quiz-result" aria-live="polite"></p><div class="btn-row"><button type="button" class="btn" data-dip-close hidden>Brilliant</button></div>';
+          var four = dipFour(dip, pool, w);
+          dd.innerHTML = '<p class="kicker">Reward ' + k + '</p><h2 id="dip-h">Lucky dip</h2><p class="dip-four">On the wheel: ' + four.map(function (i) { return esc(cap(dip[i][0])); }).join(", ") + '</p><div class="dip-wheel">' + dipSvg(dip, four) + '</div><p class="quiz-result" aria-live="polite"></p><div class="btn-row"><button type="button" class="btn" data-dip-close hidden>Brilliant</button></div>';
           dd.onclose = done;
           dd.onclick = function (e2) { if (e2.target.closest("[data-dip-close]")) dd.close(); };
           dd.showModal();
-          var sw = ds.spans[w], turn = 360 * 7 + 360 - (sw[0] + sw[1] / 2) + (Math.random() - 0.5) * sw[1] * 0.84, sp = dd.querySelector(".dip-spin");
+          var seg = 360 / four.length, turn = 360 * 7 + 360 - (four.indexOf(w) * seg + seg / 2) + (Math.random() - 0.5) * seg * 0.84, sp = dd.querySelector(".dip-spin");
           if (still) sp.style.transition = "none";
           requestAnimationFrame(function () { requestAnimationFrame(function () { sp.style.transform = "rotate(" + turn + "deg)"; }); });
           setTimeout(function () {
@@ -1182,6 +1191,30 @@
           if (navigator.share) { navigator.share({ title: "Dougie's maths rewards", text: txt }).catch(function () {}); return; }
           (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(txt) : Promise.reject()).then(function () { note.textContent = "Copied. Paste it to Dad on WhatsApp or by text."; }, function () { note.textContent = txt; });
         }
+      });
+    });
+  }
+
+  /* ---------- the lucky dip prizes: Dad or Mum ticks which are in; anyone else can only look ---------- */
+  function pagePrizes(slug) {
+    loadSubjects([slug], function () {
+      var subj = DR.subjects[slug]; if (!subj || !subj.rewards) return pageNotFound();
+      var rw = subj.rewards, email = cloud.user && cloud.user.email || "", canEdit = !DR.firebase || /^(mrmarkranderson|emmaanderson1978)@gmail\.com$/i.test(email);
+      var won = {}, st = store.read(registryItem(slug).jar); Object.keys(st.rewards || {}).forEach(function (k) { won[st.rewards[k].prize] = 1; });
+      var rows = rw.dip.map(function (d, i) {
+        var id = "prize-" + i;
+        return '<li class="prize-row"><input type="checkbox" id="' + id + '" data-prize="' + i + '"' + (dipOn(d) ? " checked" : "") + (canEdit ? "" : " disabled") + '><label for="' + id + '"><strong>' + esc(cap(d[0])) + "</strong><span>" + cap(dipChance(d[1])) + (d[3] ? ", can only be won once" + (won[d[0]] ? " (already won)" : "") : "") + "</span></label></li>";
+      }).join("");
+      frame(slug, [{ href: BASE + "/", name: "Hub" }, { href: BASE + "/" + slug + "/", name: subj.name }, { name: "Lucky dip prizes" }],
+        '<h1>Lucky dip prizes</h1><p class="lede">Tick the prizes that can come out of the maths lucky dip. Changes save straight away and show on every device.</p>' +
+        (canEdit ? "" : '<p class="note"><strong>Only Dad or Mum can change these. Sign in with their Google account to make changes.</strong></p>') +
+        "<p>Behind the scenes, rare prizes come up least often and common ones most often. Prizes marked can only be won once drop out after he's won them. The wheel he sees always has equal slices.</p>" +
+        '<section class="card section"><ul class="prizes">' + rows + "</ul></section>" +
+        '<p class="muted">The other choice at every reward is ' + esc(rw.fixed) + ".</p>", "Lucky dip prizes");
+      if (!canEdit) return;
+      document.getElementById("main").addEventListener("change", function (ev) {
+        var b = ev.target.closest("[data-prize]"); if (!b) return;
+        var pz = store.read("maths-prizes"); pz.on = pz.on || {}; pz.on[rw.dip[+b.getAttribute("data-prize")][0]] = b.checked; store.write("maths-prizes", pz);
       });
     });
   }
@@ -1216,6 +1249,7 @@
     if (/^\/past-papers\/?$/.test(path)) return pagePapers();
     if ((m = path.match(/^\/past-papers\/([a-z0-9-]+)\/([a-z0-9-]+)\/?$/))) return pageSession(m[1], m[2]);
     if ((m = path.match(/^\/([a-z0-9-]+)\/sessions\/([a-z0-9-]+)\/?$/))) return pageSession(m[1], m[2]);
+    if ((m = path.match(/^\/([a-z0-9-]+)\/prizes\/?$/))) return pagePrizes(m[1]);
     if ((m = path.match(/^\/([a-z0-9-]+)\/?$/))) return pageSubject(m[1]);
     pageNotFound();
   }
