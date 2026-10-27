@@ -361,6 +361,9 @@
     var won = {}; Object.keys(st.rewards || {}).forEach(function (k) { won[st.rewards[k].prize] = 1; });
     return dip.map(function (d, i) { return i; }).filter(function (i) { return dipOn(dip[i]) && !won[dip[i][0]]; });
   }
+  /* Dad's one-off free spin (rewards.free): saved as reward "free", so it can only happen once, and the "not" prizes are left out of it */
+  function freePool(dip, st) { var no = (JAR.rewards.free || {}).not || []; return dipPool(dip, st).filter(function (i) { return !no.some(function (w) { return dip[i][0].indexOf(w) > -1; }); }); }
+  function rewardName(k) { return k === "free" ? "Free spin" : "Reward " + k; }
   /* Sounds for the lucky dip, made in the browser: a tick each time a slice passes the pointer, and a fanfare at the end */
   function dipSound() {
     var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null;
@@ -425,7 +428,8 @@
         '<div class="btn-row"><button type="button" class="btn btn-big" data-claim="' + k + '" data-pick="fixed">' + esc(cap(rw.fixed)) + '</button><button type="button" class="btn btn-big" data-claim="' + k + '" data-pick="dip"' + (pool.length ? "" : " disabled") + '>Lucky dip</button></div>' + (pool.length ? "" : "<p>There's nothing left in the lucky dip. Ask Dad to add some more prizes.</p>") +
         "<p>Once you've picked, it's yours: no swapping.</p></div>";
     }).join("");
-    var won = Object.keys(got).length ? '<div class="stuck send-dad"><p class="stuck-h">Your rewards</p><ul>' + Object.keys(got).sort().map(function (k) { return "<li>Reward " + k + ": <strong>" + esc(cap(got[k].prize)) + "</strong>" + (got[k].pick === "dip" ? " (lucky dip)" : "") + "</li>"; }).join("") + '</ul><p>Tell Dad so he can sort it out.</p><button type="button" class="btn btn-big" data-tell="1">Tell Dad about my rewards</button><p class="send-note" aria-live="polite"></p></div>' : "";
+    if (rw.free && !got.free && freePool(rw.dip, q).length) claims = '<div class="stuck reward-claim"><p class="stuck-h">Dad has given you a free spin ' + esc(rw.free.why) + '!</p><div class="btn-row"><button type="button" class="btn btn-big" data-claim="free" data-pick="dip">Spin the lucky dip</button></div><p>This one\'s a one-off. The Amazon vouchers and PlayStation Plus aren\'t in this spin.</p></div>' + claims;
+    var won = Object.keys(got).length ? '<div class="stuck send-dad"><p class="stuck-h">Your rewards</p><ul>' + Object.keys(got).sort().map(function (k) { return "<li>" + rewardName(k) + ": <strong>" + esc(cap(got[k].prize)) + "</strong>" + (got[k].pick === "dip" ? " (lucky dip)" : "") + "</li>"; }).join("") + '</ul><p>Tell Dad so he can sort it out.</p><button type="button" class="btn btn-big" data-tell="1">Tell Dad about my rewards</button><p class="send-note" aria-live="polite"></p></div>' : "";
     return '<div><h2 id="jar-h">' + JAR.title + '</h2><p class="jar-total">' + banked + "<small>of " + n + " questions banked</small></p>" + (JAR.note ? "<p><strong>" + JAR.note + "</strong></p>" : "") +
       "<p>Instead of money, this jar is full of rewards. It fills from " + JAR.wheel + ": every question you get right for the first time goes in. Every " + rw.every + " questions you get right, you win a reward. A wrong answer doesn't cost you anything.</p>" +
       "<p>For each reward you choose: " + esc(rw.fixed) + ", or a lucky dip. Each lucky dip prize can only be won once, and none of the prizes can be swapped for cash." + (pool.length ? " Right now the lucky dip could be:</p><ul class=\"dip-list\">" + pool.map(function (i) { return "<li>" + esc(cap(rw.dip[i][0])) + "</li>"; }).join("") + "</ul><p><a href=\"" + BASE + "/maths/lucky-dip/\">Try a demo spin of the lucky dip</a></p>" : "</p>") +
@@ -1208,7 +1212,7 @@
           var k = c.getAttribute("data-claim"), pick = c.getAttribute("data-pick"), dip = subj.rewards.dip;
           st.rewards = st.rewards || {}; if (st.rewards[k]) return;
           /* the prize is drawn and saved before the wheel spins, so closing the page can't re-roll it */
-          var pool = dipPool(dip, st); if (pick === "dip" && !pool.length) return;
+          var pool = k === "free" ? freePool(dip, st) : dipPool(dip, st); if (pick === "dip" && !pool.length) return;
           /* his very first lucky dip always lands on a cheap treat that costs money (Dad's rule); the wheel still shows the big prizes */
           var firstDip = !Object.keys(st.rewards).some(function (r) { return st.rewards[r].pick === "dip"; }), cheap = pool.filter(function (i) { return dip[i][5] === 1; });
           var w = pick === "dip" ? dipDraw(dip, firstDip && cheap.length ? cheap : pool) : -1;
@@ -1218,7 +1222,7 @@
           if (w < 0) return done();
           var dd = document.getElementById("dip-q");
           var four = dipFour(dip, pool, w);
-          dd.innerHTML = '<p class="kicker">Reward ' + k + '</p><h2 id="dip-h">Lucky dip</h2><p class="dip-four">On the wheel: ' + four.map(function (i) { return esc(cap(dip[i][0])); }).join(", ") + '</p><div class="dip-wheel">' + dipSvg(dip, four) + '</div><p class="quiz-result" aria-live="polite"></p><div class="btn-row"><button type="button" class="btn" data-dip-close hidden>Brilliant</button></div>';
+          dd.innerHTML = '<p class="kicker">' + rewardName(k) + '</p><h2 id="dip-h">Lucky dip</h2><p class="dip-four">On the wheel: ' + four.map(function (i) { return esc(cap(dip[i][0])); }).join(", ") + '</p><div class="dip-wheel">' + dipSvg(dip, four) + '</div><p class="quiz-result" aria-live="polite"></p><div class="btn-row"><button type="button" class="btn" data-dip-close hidden>Brilliant</button></div>';
           dd.onclose = done;
           dd.onclick = function (e2) { if (e2.target.closest("[data-dip-close]")) dd.close(); };
           dd.showModal();
@@ -1229,7 +1233,7 @@
           return;
         }
         if (tell) {
-          var got = st.rewards || {}, txt = "Dougie's maths reward jar: " + Object.keys(st.banked).length + " questions banked. Rewards won: " + Object.keys(got).sort().map(function (k) { return "Reward " + k + ": " + cap(got[k].prize); }).join("; ") + ".";
+          var got = st.rewards || {}, txt = "Dougie's maths reward jar: " + Object.keys(st.banked).length + " questions banked. Rewards won: " + Object.keys(got).sort().map(function (k) { return rewardName(k) + ": " + cap(got[k].prize); }).join("; ") + ".";
           var note = tell.parentNode.querySelector(".send-note");
           if (navigator.share) { navigator.share({ title: "Dougie's maths rewards", text: txt }).catch(function () {}); return; }
           (navigator.clipboard && navigator.clipboard.writeText ? navigator.clipboard.writeText(txt) : Promise.reject()).then(function () { note.textContent = "Copied. Paste it to Dad on WhatsApp or by text."; }, function () { note.textContent = txt; });
