@@ -352,7 +352,7 @@
   /* Maths has a reward jar instead of money: a reward every "every" right answers (100). These are the counts that win one. */
   function rewardMarks(n) { var out = []; for (var m = JAR.rewards.every; m <= n; m += JAR.rewards.every) out.push(m); return out; }
   function cap(t) { t = String(t || ""); return t.charAt(0).toUpperCase() + t.slice(1); }
-  /* Lucky dip entries are [prize, weight, short label, once only, in to start with]. Dad ticks which are in on the prizes page
+  /* Lucky dip entries are [prize, weight, short label, once only, in to start with, cost (0 free, 1 cheap, 2 dear)]. Dad ticks which are in on the prizes page
      (saved under "maths-prizes"). Behind the scenes the dearer treats have a low weight, so they come up less often, and a
      once-only prize drops out after it's been won. The wheel itself always shows equal slices. */
   function dipChance(w) { return w < 1 ? "very rare" : w <= 1 ? "rare" : w <= 2 ? "not so common" : "common"; }
@@ -1199,7 +1199,9 @@
           st.rewards = st.rewards || {}; if (st.rewards[k]) return;
           /* the prize is drawn and saved before the wheel spins, so closing the page can't re-roll it */
           var pool = dipPool(dip, st); if (pick === "dip" && !pool.length) return;
-          var w = pick === "dip" ? dipDraw(dip, pool) : -1;
+          /* his very first lucky dip always lands on a cheap treat that costs money (Dad's rule); the wheel still shows the big prizes */
+          var firstDip = !Object.keys(st.rewards).some(function (r) { return st.rewards[r].pick === "dip"; }), cheap = pool.filter(function (i) { return dip[i][5] === 1; });
+          var w = pick === "dip" ? dipDraw(dip, firstDip && cheap.length ? cheap : pool) : -1;
           st.rewards[k] = { pick: pick, prize: pick === "fixed" ? subj.rewards.fixed : dip[w][0], at: Date.now() };
           store.write(JAR.key, st);
           var done = function () { document.querySelector(".jar").outerHTML = jarHtml(true); var tb = document.querySelector("[data-tell]"); if (tb) tb.focus(); };
