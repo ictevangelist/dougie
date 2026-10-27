@@ -194,6 +194,12 @@ main { padding: var(--space-5) 0 var(--space-7); }
 .prize-row label { cursor: pointer; }
 .prize-row label span { display: block; color: var(--ink-2); font-size: var(--step--1); }
 .pp-code { font-family: inherit; white-space: pre; overflow-x: auto; background: var(--space); border: 1px solid var(--line); border-radius: var(--radius-s); padding: var(--space-3); margin: 0 0 var(--space-3); }
+.pp-source { margin: 0 0 var(--space-4); padding: var(--space-4); background: var(--space); border: 1px solid var(--line); border-radius: var(--radius); }
+.pp-source figcaption { margin-bottom: var(--space-3); font-style: italic; }
+.pp-source figcaption strong { font-style: normal; font-family: "Exo 2", sans-serif; display: block; font-size: var(--step-1); }
+.src-lines { margin: 0; padding-left: 2.8em; line-height: 1.7; }
+.src-lines li::marker { color: var(--ink-2); font-size: var(--step--1); }
+.pp-quote { margin: 0 0 var(--space-3); padding: var(--space-3); border-left: 4px solid var(--portal); background: var(--space); border-radius: var(--radius-s); }
 .dip-list { margin: 0 0 var(--space-3); padding-left: 1.4em; }
 .lost span { display: block; color: var(--ink-2); font-size: var(--step--1); }
 .jar.still .jar-coins { animation: none; }

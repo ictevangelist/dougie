@@ -1014,6 +1014,8 @@
       if (it.group) out += '<h4 class="pp-group">' + esc(it.group) + "</h4>";
       if (it.context) out += "<p>" + esc(it.context) + "</p>";
       if (it.code) out += '<pre class="pp-code">' + esc(it.code) + "</pre>";
+      if (it.source) out += '<figure class="pp-source"><figcaption><strong>' + esc(it.source.title) + "</strong> " + esc(it.source.intro) + '</figcaption><ol class="src-lines">' + it.source.lines.map(function (l) { return "<li>" + esc(l) + "</li>"; }).join("") + "</ol></figure>";
+      if (it.quote) { var src = a.items.filter(function (x) { return x.source; })[0].source; out += '<blockquote class="pp-quote">' + src.lines.slice(it.quote[0] - 1, it.quote[1]).map(esc).join(" ") + "</blockquote>"; }
       if (it.table) out += '<div class="table-wrap"><table class="act-table"><thead><tr>' + it.table[0].map(function (h) { return '<th scope="col">' + esc(h) + "</th>"; }).join("") + "</tr></thead><tbody>" + it.table.slice(1).map(function (r) { return "<tr>" + r.map(function (c) { return "<td>" + esc(c) + "</td>"; }).join("") + "</tr>"; }).join("") + "</tbody></table></div>";
       var id = "pp-" + i + "-" + it.n.replace(/\W/g, ""), head = '<p class="pp-q"><strong>' + esc(it.n) + "</strong> " + esc(it.q) + ' <span class="pp-marks">[' + it.marks + " mark" + (it.marks === 1 ? "" : "s") + "]</span></p>";
       if (it.type === "mcq") out += '<fieldset class="pick pp-item"><legend>' + head + "</legend>" + it.options.map(function (o) { return '<label class="pick-row"><input type="radio" name="' + id + '" data-pa="' + esc(it.n) + '" value="' + esc(o) + '"' + (v[it.n] === o ? " checked" : "") + off + "> <span>" + esc(o) + "</span></label>"; }).join("") + "</fieldset>";
