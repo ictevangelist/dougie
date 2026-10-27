@@ -83,8 +83,13 @@
         cloud.load("firebase-auth-compat.js", next); cloud.load("firebase-firestore-compat.js", next);
       });
     },
+    /* iPhones and iPads block Google's sign-in on the firebaseapp.com address from handing the login back. For them the sign-in
+       helper runs on this site (/__/auth/handler.html and friends) and the sign-in is a full-page redirect. Everything else keeps the pop-up. */
+    ios: /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1),
     init: function (done) {
-      var fb = window.firebase; fb.initializeApp(DR.firebase);
+      var fb = window.firebase, own = cloud.ios && location.hostname === "dougie.ictevangelist.com";
+      fb.initializeApp(own ? Object.assign({}, DR.firebase, { authDomain: location.hostname }) : DR.firebase);
+      if (own) fb.auth().getRedirectResult().catch(function (e) { cloud.gate("Sign-in didn't work. Try again. (Google said: " + (e.code || e.message) + ")"); });
       var started = false;
       fb.auth().onAuthStateChanged(function (u) {
         if (!u) return cloud.gate();
@@ -119,7 +124,7 @@
         '<p><button type="button" class="btn btn-big" id="signin">Sign in with Google</button></p></div></div>', "Sign in");
       document.getElementById("signin").addEventListener("click", function () {
         var fb = window.firebase, pr = new fb.auth.GoogleAuthProvider(); pr.setCustomParameters({ prompt: "select_account" });
-        fb.auth().signInWithPopup(pr).catch(function (e) { if (e && e.code !== "auth/popup-closed-by-user") cloud.gate("Sign-in didn't work. Try again. (Google said: " + (e.code || e.message) + ")"); });
+        (cloud.ios && location.hostname === "dougie.ictevangelist.com" ? fb.auth().signInWithRedirect(pr) : fb.auth().signInWithPopup(pr)).catch(function (e) { if (e && e.code !== "auth/popup-closed-by-user") cloud.gate("Sign-in didn't work. Try again. (Google said: " + (e.code || e.message) + ")"); });
       });
     }
   };
