@@ -361,13 +361,33 @@
     var won = {}; Object.keys(st.rewards || {}).forEach(function (k) { won[st.rewards[k].prize] = 1; });
     return dip.map(function (d, i) { return i; }).filter(function (i) { return dipOn(dip[i]) && !(dip[i][3] && won[dip[i][0]]); });
   }
-  /* Spin the lucky dip wheel inside box so it stops on prize w, then call done */
+  /* Sounds for the lucky dip, made in the browser: a tick each time a slice passes the pointer, and a fanfare at the end */
+  function dipSound() {
+    var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null;
+    var ac = DR.audio = DR.audio || new AC(); if (ac.state === "suspended") ac.resume();
+    function beep(freq, at, len, vol, type) {
+      var o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime + at;
+      o.type = type; o.frequency.value = freq; g.gain.setValueAtTime(vol, t); g.gain.exponentialRampToValueAtTime(0.001, t + len);
+      o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + len + 0.02);
+    }
+    return {
+      tick: function () { beep(1700, 0, 0.03, 0.12, "square"); },
+      win: function () { [523.25, 659.25, 783.99, 1046.5].forEach(function (f, i) { beep(f, i * 0.11, i === 3 ? 0.5 : 0.18, 0.2, "triangle"); }); }
+    };
+  }
+  /* Spin the lucky dip wheel inside box so it stops on prize w, then call done. Call it from a tap, so the sound is allowed to play. */
   function dipSpin(box, four, w, done) {
     var still = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches, seg = 360 / four.length, sp = box.querySelector(".dip-spin");
-    var turn = 360 * 7 + 360 - (four.indexOf(w) * seg + seg / 2) + (Math.random() - 0.5) * seg * 0.84;
+    var turn = 360 * 7 + 360 - (four.indexOf(w) * seg + seg / 2) + (Math.random() - 0.5) * seg * 0.84, snd = dipSound(), last = -1, spinning = !still;
     if (still) sp.style.transition = "none";
     requestAnimationFrame(function () { requestAnimationFrame(function () { sp.style.transform = "rotate(" + turn + "deg)"; }); });
-    setTimeout(done, still ? 100 : 6600);
+    (function watch() {
+      if (!spinning || !snd) return;
+      var m = new DOMMatrix(getComputedStyle(sp).transform), rot = (Math.atan2(m.b, m.a) * 180 / Math.PI + 360) % 360, slice = Math.floor(((360 - rot) % 360) / seg);
+      if (last >= 0 && slice !== last) snd.tick();
+      last = slice; requestAnimationFrame(watch);
+    }());
+    setTimeout(function () { spinning = false; if (snd) snd.win(); done(); }, still ? 100 : 6600);
   }
   function dipDraw(dip, pool) {
     var total = pool.reduce(function (t, i) { return t + dip[i][1]; }, 0), r = Math.random() * total;
