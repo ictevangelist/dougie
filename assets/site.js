@@ -350,6 +350,8 @@
   }
 
   /* Maths has a reward jar instead of money: a reward every "every" right answers (100). These are the counts that win one. */
+  function prizesOn() { return DR.prizes !== false; }
+  var PAUSED = "<p><strong>Prizes are paused for now.</strong></p>";
   function rewardMarks(n) { var out = []; for (var m = JAR.rewards.every; m <= n; m += JAR.rewards.every) out.push(m); return out; }
   function cap(t) { t = String(t || ""); return t.charAt(0).toUpperCase() + t.slice(1); }
   /* Lucky dip entries are [prize, weight, short label, once only, in to start with, cost (0 free, 1 cheap, 2 dear)]. Dad ticks which are in on the prizes page
@@ -433,8 +435,9 @@
       if (got[f.key] || !freePool(rw.dip, q, f).length) return "";
       return '<div class="stuck reward-claim"><p class="stuck-h">' + esc(f.head) + '</p><div class="btn-row"><button type="button" class="btn btn-big" data-claim="' + f.key + '" data-pick="dip">Spin the lucky dip</button></div><p>' + esc(f.note) + "</p></div>";
     }).join("") + claims;
+    if (!prizesOn()) claims = "";
     var won = Object.keys(got).length ? '<div class="stuck send-dad"><p class="stuck-h">Your rewards</p><ul>' + Object.keys(got).sort().map(function (k) { return "<li>" + rewardName(k) + ": <strong>" + esc(cap(got[k].prize)) + "</strong>" + (got[k].pick === "dip" ? " (lucky dip)" : "") + "</li>"; }).join("") + '</ul><p>Tell Dad so he can sort it out.</p><button type="button" class="btn btn-big" data-tell="1">Tell Dad about my rewards</button><p class="send-note" aria-live="polite"></p></div>' : "";
-    return '<div><h2 id="jar-h">' + JAR.title + '</h2><p class="jar-total">' + banked + "<small>of " + n + " questions banked</small></p>" + (JAR.note ? "<p><strong>" + JAR.note + "</strong></p>" : "") +
+    return '<div><h2 id="jar-h">' + JAR.title + '</h2><p class="jar-total">' + banked + "<small>of " + n + " questions banked</small></p>" + (JAR.note ? "<p><strong>" + JAR.note + "</strong></p>" : "") + (prizesOn() ? "" : PAUSED) +
       "<p>Instead of money, this jar is full of rewards. It fills from " + JAR.wheel + ": every question you get right for the first time goes in. Every " + rw.every + " questions you get right, you win a reward. A wrong answer doesn't cost you anything.</p>" +
       "<p>For each reward you choose: " + esc(rw.fixed) + ", or a lucky dip. Each lucky dip prize can only be won once, and none of the prizes can be swapped for cash." + (pool.length ? " Right now the lucky dip could be:</p><ul class=\"dip-list\">" + pool.map(function (i) { return "<li>" + esc(cap(rw.dip[i][0])) + "</li>"; }).join("") + "</ul><p><a href=\"" + BASE + "/maths/lucky-dip/\">Try a demo spin of the lucky dip</a></p>" : "</p>") +
       claims + won +
@@ -460,7 +463,7 @@
       '<g clip-path="url(#jar-clip)"><g class="jar-coins"><rect class="jar-fill" x="0" y="' + (bottom - h) + '" width="170" height="' + h + '"/>' + (h ? '<rect class="jar-shine" x="0" y="' + (bottom - h) + '" width="170" height="6"/>' : "") + "</g></g>" +
       '<path class="jar-glass" d="M40 40 h90 v10 q20 10 20 40 v140 q0 20 -20 20 h-90 q-20 0 -20 -20 v-140 q0 -30 20 -40 z"/>' +
       '<rect class="jar-lid" x="34" y="22" width="102" height="20" rx="6"/>' + ticks + "</svg>" + (rw ? rewardsHtml(q, banked, n) + "</section>" :
-      '<div><h2 id="jar-h">' + (JAR.title || "The money jar") + '</h2><p class="jar-total">' + pounds(totalP) + "<small>in the jar so far</small></p>" + (JAR.note ? "<p><strong>" + JAR.note + "</strong></p>" : "") +
+      '<div><h2 id="jar-h">' + (JAR.title || "The money jar") + '</h2><p class="jar-total">' + pounds(totalP) + "<small>in the jar so far</small></p>" + (JAR.note ? "<p><strong>" + JAR.note + "</strong></p>" : "") + (prizesOn() ? "" : PAUSED) +
       "<p>The jar fills from " + (JAR.wheel || "Dougie's Wheel of Fortune") + ". A question you get right for the first time starts at 5p, and every " + STEP + " questions you get right, each right answer is worth 2\u00bdp more. A wrong answer doesn't cost you anything.</p>" +
       ladderHtml(banked, n) +
       "<p>So far: " + banked + " of " + n + " questions banked. Bank them all and the jar is full at " + pounds(maxP) + ".</p></div></section>");
@@ -561,7 +564,8 @@
       function mark(right) {
         var st = quizStore(), msg;
         var before = Object.keys(st.banked).length, win = prize(before);
-        if (right && !st.banked[q[1]]) {
+        if (right && !st.banked[q[1]] && !prizesOn()) msg = "Right! Prizes are paused for now, so nothing goes in the jar.";
+        else if (right && !st.banked[q[1]]) {
           st.banked[q[1]] = true; st.pence += win;
           if (JAR.rewards) {
             var mk = rewardMarks(bank.length), hit = mk.indexOf(before + 1), nx = mk.filter(function (m) { return m > before + 1; })[0];
@@ -583,7 +587,7 @@
     }
   }
   function wheelHtml(name) {
-    return '<div class="wheel-wrap"><div class="wheel">' + wheelSvg() + '<button type="button" class="wheel-btn" id="wheel" aria-label="SPIN ' + name + ' for a question">SPIN</button></div><p class="wheel-cap"><strong>' + name + '</strong><br>Tap to spin. ' + (JAR.rewards ? "Right first time: it goes in the jar." : 'Right first time: +<span id="wheel-prize">' + pence(prize(Object.keys(quizStore().banked).length)) + "</span>.") + " Wrong: nothing lost.</p></div>";
+    return '<div class="wheel-wrap"><div class="wheel">' + wheelSvg() + '<button type="button" class="wheel-btn" id="wheel" aria-label="SPIN ' + name + ' for a question">SPIN</button></div><p class="wheel-cap"><strong>' + name + '</strong><br>Tap to spin. ' + (!prizesOn() ? "Prizes are paused for now." : JAR.rewards ? "Right first time: it goes in the jar." : 'Right first time: +<span id="wheel-prize">' + pence(prize(Object.keys(quizStore().banked).length)) + "</span>.") + " Wrong: nothing lost.</p></div>";
   }
 
   /* ---------- hub ---------- */
@@ -1212,7 +1216,7 @@
       /* Picking a reward: the lucky dip is drawn once and saved, so it can't be re-rolled */
       document.getElementById("main").addEventListener("click", function (ev) {
         var c = ev.target.closest("[data-claim]"), tell = ev.target.closest("[data-tell]"), st = quizStore();
-        if (c) {
+        if (c && prizesOn()) {
           var k = c.getAttribute("data-claim"), pick = c.getAttribute("data-pick"), dip = subj.rewards.dip;
           st.rewards = st.rewards || {}; if (st.rewards[k]) return;
           /* the prize is drawn and saved before the wheel spins, so closing the page can't re-roll it */
