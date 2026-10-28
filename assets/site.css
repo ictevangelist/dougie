@@ -68,6 +68,7 @@ img { max-width: 100%; height: auto; }
 main { padding: var(--space-5) 0 var(--space-7); }
 
 /* Buttons */
+[hidden] { display: none !important; }
 .btn { display: inline-flex; align-items: center; justify-content: center; gap: var(--space-2); min-height: var(--tap); padding: 10px 20px; border-radius: var(--pill);
   background: var(--portal); color: var(--midnight); border: 2px solid var(--portal); font-weight: 700; text-decoration: none; cursor: pointer; box-shadow: 0 0 18px rgba(46, 204, 113, .35); }
 .btn:hover { background: var(--portal-2); border-color: var(--portal-2); }

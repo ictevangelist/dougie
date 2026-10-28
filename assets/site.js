@@ -361,9 +361,10 @@
     var won = {}; Object.keys(st.rewards || {}).forEach(function (k) { won[st.rewards[k].prize] = 1; });
     return dip.map(function (d, i) { return i; }).filter(function (i) { return dipOn(dip[i]) && !won[dip[i][0]]; });
   }
-  /* Dad's one-off free spin (rewards.free): saved as reward "free", so it can only happen once, and the "not" prizes are left out of it */
-  function freePool(dip, st) { var no = (JAR.rewards.free || {}).not || []; return dipPool(dip, st).filter(function (i) { return !no.some(function (w) { return dip[i][0].indexOf(w) > -1; }); }); }
-  function rewardName(k) { return k === "free" ? "Free spin" : "Reward " + k; }
+  /* Dad's one-off free spins (rewards.free): each is saved under its own key, so it can only happen once. A spin leaves out its "not" prizes, and with "cost" set it only has prizes that cost that much or less */
+  function freeSpin(k) { return (JAR.rewards.free || []).filter(function (f) { return f.key === k; })[0]; }
+  function freePool(dip, st, f) { var no = f.not || []; return dipPool(dip, st).filter(function (i) { return !no.some(function (w) { return dip[i][0].indexOf(w) > -1; }) && (f.cost === undefined || dip[i][5] <= f.cost); }); }
+  function rewardName(k) { var f = freeSpin(k); return f ? f.name : "Reward " + k; }
   /* Sounds for the lucky dip, made in the browser: a tick each time a slice passes the pointer, and a fanfare at the end */
   function dipSound() {
     var AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null;
@@ -428,7 +429,10 @@
         '<div class="btn-row"><button type="button" class="btn btn-big" data-claim="' + k + '" data-pick="fixed">' + esc(cap(rw.fixed)) + '</button><button type="button" class="btn btn-big" data-claim="' + k + '" data-pick="dip"' + (pool.length ? "" : " disabled") + '>Lucky dip</button></div>' + (pool.length ? "" : "<p>There's nothing left in the lucky dip. Ask Dad to add some more prizes.</p>") +
         "<p>Once you've picked, it's yours: no swapping.</p></div>";
     }).join("");
-    if (rw.free && !got.free && freePool(rw.dip, q).length) claims = '<div class="stuck reward-claim"><p class="stuck-h">Dad has given you a free spin ' + esc(rw.free.why) + '!</p><div class="btn-row"><button type="button" class="btn btn-big" data-claim="free" data-pick="dip">Spin the lucky dip</button></div><p>This one\'s a one-off. The Amazon vouchers and PlayStation Plus aren\'t in this spin.</p></div>' + claims;
+    claims = (rw.free || []).map(function (f) {
+      if (got[f.key] || !freePool(rw.dip, q, f).length) return "";
+      return '<div class="stuck reward-claim"><p class="stuck-h">' + esc(f.head) + '</p><div class="btn-row"><button type="button" class="btn btn-big" data-claim="' + f.key + '" data-pick="dip">Spin the lucky dip</button></div><p>' + esc(f.note) + "</p></div>";
+    }).join("") + claims;
     var won = Object.keys(got).length ? '<div class="stuck send-dad"><p class="stuck-h">Your rewards</p><ul>' + Object.keys(got).sort().map(function (k) { return "<li>" + rewardName(k) + ": <strong>" + esc(cap(got[k].prize)) + "</strong>" + (got[k].pick === "dip" ? " (lucky dip)" : "") + "</li>"; }).join("") + '</ul><p>Tell Dad so he can sort it out.</p><button type="button" class="btn btn-big" data-tell="1">Tell Dad about my rewards</button><p class="send-note" aria-live="polite"></p></div>' : "";
     return '<div><h2 id="jar-h">' + JAR.title + '</h2><p class="jar-total">' + banked + "<small>of " + n + " questions banked</small></p>" + (JAR.note ? "<p><strong>" + JAR.note + "</strong></p>" : "") +
       "<p>Instead of money, this jar is full of rewards. It fills from " + JAR.wheel + ": every question you get right for the first time goes in. Every " + rw.every + " questions you get right, you win a reward. A wrong answer doesn't cost you anything.</p>" +
@@ -1212,7 +1216,7 @@
           var k = c.getAttribute("data-claim"), pick = c.getAttribute("data-pick"), dip = subj.rewards.dip;
           st.rewards = st.rewards || {}; if (st.rewards[k]) return;
           /* the prize is drawn and saved before the wheel spins, so closing the page can't re-roll it */
-          var pool = k === "free" ? freePool(dip, st) : dipPool(dip, st); if (pick === "dip" && !pool.length) return;
+          var pool = freeSpin(k) ? freePool(dip, st, freeSpin(k)) : dipPool(dip, st); if (pick === "dip" && !pool.length) return;
           /* his very first lucky dip always lands on a cheap treat that costs money (Dad's rule); the wheel still shows the big prizes */
           var firstDip = !Object.keys(st.rewards).some(function (r) { return st.rewards[r].pick === "dip"; }), cheap = pool.filter(function (i) { return dip[i][5] === 1; });
           var w = pick === "dip" ? dipDraw(dip, firstDip && cheap.length ? cheap : pool) : -1;
@@ -1221,13 +1225,14 @@
           var done = function () { document.querySelector(".jar").outerHTML = jarHtml(true); var tb = document.querySelector("[data-tell]"); if (tb) tb.focus(); };
           if (w < 0) return done();
           var dd = document.getElementById("dip-q");
-          var four = dipFour(dip, pool, w);
+          /* a free spin with a cost cap still shows the usual wheel, so it looks like any other spin */
+          var fs = freeSpin(k), four = dipFour(dip, fs && fs.cost !== undefined ? dipPool(dip, st) : pool, w);
           dd.innerHTML = '<p class="kicker">' + rewardName(k) + '</p><h2 id="dip-h">Lucky dip</h2><p class="dip-four">On the wheel: ' + four.map(function (i) { return esc(cap(dip[i][0])); }).join(", ") + '</p><div class="dip-wheel">' + dipSvg(dip, four) + '</div><p class="quiz-result" aria-live="polite"></p><div class="btn-row"><button type="button" class="btn" data-dip-close hidden>Brilliant</button></div>';
           dd.onclose = done;
           dd.onclick = function (e2) { if (e2.target.closest("[data-dip-close]")) dd.close(); };
           dd.showModal();
           dipSpin(dd, four, w, function () {
-            var res = dd.querySelector(".quiz-result"); res.textContent = "You won: " + cap(dip[w][0]) + "!"; res.className = "quiz-result good";
+            var res = dd.querySelector(".quiz-result"); res.textContent = "You won: " + cap(dip[w][0]) + "!" + (fs && fs.done ? " " + fs.done : ""); res.className = "quiz-result good";
             var cb = dd.querySelector("[data-dip-close]"); cb.hidden = false; cb.focus();
           });
           return;
